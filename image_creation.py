@@ -12,8 +12,7 @@ colors = {"white": (255, 255, 255),
 image_size = [64, 64]
 
 
-def save_default_image(image_path="default_image.png", background="white", dimension=image_size):
-
+def make_default_image(background="white", dimension=image_size):
     image = np.zeros((dimension[0], dimension[0], 3), dtype=np.uint8)
 
     if background in colors:
@@ -26,8 +25,11 @@ def save_default_image(image_path="default_image.png", background="white", dimen
         warning_string = "Warning: Color '%s' not defined in colors dictionary" % background
         warnings.warn(warning_string)
 
-    img = Image.fromarray(image)
+    return Image.fromarray(image)
 
+
+def save_default_image(image_path="default_image.png", background="white", dimension=image_size):
+    img = make_default_image(background, dimension)
     img.save(image_path)
 
 
@@ -129,6 +131,25 @@ def notation_point_to_array(point_coord, array_dim=image_size):
 
     return (x, y)
 
+
+
+def make_image(base_image, shape, filling):
+    new_img = base_image.copy()
+    translation = np.random.uniform(low=-5, high=5, size=2)
+    rotation = np.random.uniform(low=-np.pi / 2, high=np.pi / 2)
+
+    if shape == "square":
+        points = calc_square_pos(translation=translation, rotation=rotation)
+
+    elif shape == "triangle":
+        points = calc_traingle_pos(translation=translation, rotation=rotation)
+
+    draw = ImageDraw.Draw(new_img)
+    draw.polygon(points, fill=colors[filling])
+    del draw
+    return new_img
+
+
 def create_images(folder_path = "images\\", n_per_configuration=1, shapes=["square", "triangle"], fillings=["blue", "red"]):
 
     base_image = Image.open("default_image.png")
@@ -140,25 +161,7 @@ def create_images(folder_path = "images\\", n_per_configuration=1, shapes=["squa
     for i in range(n_per_configuration):
         for shape in shapes:
             for filling in fillings:
-
-                new_img = base_image.copy()
-                translation = np.random.uniform(low=-5, high=5, size=2)
-                rotation = np.random.uniform(low=-np.pi / 2, high=np.pi / 2)
-
-                if shape == "square":
-
-                    points = calc_square_pos(translation=translation, rotation=rotation)
-
-                elif shape == "triangle":
-
-                    points = calc_traingle_pos(translation=translation, rotation=rotation)
-
-                draw = ImageDraw.Draw(new_img)
-
-                draw.polygon(points, fill=colors[filling])
-
-                del draw
-
+                new_img = make_image(base_image, shape, filling)
                 img_name = folder_path + "%s_%s_%s.png" %(image_number, shape, filling)
 
                 image_number += 1
