@@ -16,6 +16,13 @@ description_templates = [
 ]
 
 
+def get_template_words():
+    """Returns a set of all used words in the text templates, excluding placeholders."""
+    return set(word for tpl in description_templates
+               for word in tpl.split(" ")
+               if not word.startswith("{"))
+
+
 def apply_placeholders(template_str, **kwargs):
     for placeholder, value in kwargs.items():
         template_str = template_str.replace("{"+placeholder+"}", value)
