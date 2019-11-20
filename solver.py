@@ -55,9 +55,12 @@ class Solver(object):
         for epoch in range(num_epochs):
             # TRAINING
             model.train()
-            for i, (inputs, targets) in enumerate(train_loader, 1):
-                inputs, targets = inputs.to(device), targets.to(device)
-                batch_size=inputs.size(0)
+            for i, batch in enumerate(train_loader, 1):
+                batch = tuple(tensor.to(device) for tensor in batch)
+                inputs = batch[:-1]
+                targets = batch[-1]
+
+                batch_size = targets.size(0)
                 
                 optim.zero_grad()
                 outputs = model(inputs)
@@ -89,8 +92,11 @@ class Solver(object):
             val_losses = []
             val_scores = []
             model.eval()
-            for inputs, targets in val_loader:
-                inputs, targets = inputs.to(device), targets.to(device)
+            for i, batch in enumerate(val_loader, 1):
+                batch = tuple(tensor.to(device) for tensor in batch)
+                inputs = batch[:-1]
+                targets = batch[-1]
+
                 outputs = model.forward(inputs)
                 loss = self.loss_func(outputs, targets)
                 val_losses.append(loss.detach().numpy())
