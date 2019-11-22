@@ -9,10 +9,10 @@ colors = {"white": (255, 255, 255),
           "blue": (0, 0, 255),
           "red": (255, 0, 0)}
 
-image_size = [64, 64]
+default_image_size = [64, 64]
 
 
-def make_default_image(background="white", dimension=image_size):
+def make_default_image(background="white", dimension=default_image_size):
     image = np.zeros((dimension[0], dimension[0], 3), dtype=np.uint8)
 
     if background in colors:
@@ -28,7 +28,7 @@ def make_default_image(background="white", dimension=image_size):
     return Image.fromarray(image)
 
 
-def save_default_image(image_path="default_image.png", background="white", dimension=image_size):
+def save_default_image(image_path="default_image.png", background="white", dimension=default_image_size):
     img = make_default_image(background, dimension)
     img.save(image_path)
 
@@ -42,7 +42,7 @@ def read_image_to_np(image_path="default_image.png"):
     return np_image
 
 
-def calc_traingle_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=image_size):
+def calc_traingle_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=default_image_size):
 
     center_point = [int(image_dim[0]/2) + translation[0], int(image_dim[0]/2) + translation[1]]
 
@@ -65,7 +65,7 @@ def calc_traingle_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=
     return [point1, point2, point3]
 
 
-def calc_square_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=image_size):
+def calc_square_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=default_image_size):
 
     center_point = [int(image_dim[0] / 2) + translation[0], int(image_dim[0] / 2) + translation[1]]
 
@@ -114,7 +114,7 @@ def rotate(origin, point, angle):
     return [qx, qy]
 
 
-def notation_array_to_point(array_coord, array_dim=image_size):
+def notation_array_to_point(array_coord, array_dim=default_image_size):
 
     x = array_coord[1]
 
@@ -123,7 +123,7 @@ def notation_array_to_point(array_coord, array_dim=image_size):
     return [x, y]
 
 
-def notation_point_to_array(point_coord, array_dim=image_size):
+def notation_point_to_array(point_coord, array_dim=default_image_size):
 
     x = int(point_coord[0])
 
@@ -133,20 +133,25 @@ def notation_point_to_array(point_coord, array_dim=image_size):
 
 
 
-def make_image(base_image, shape, filling):
+def make_image(base_image, shape, filling, image_size=default_image_size, super_sampling=1):
+    super_size = (super_sampling * image_size[0], super_sampling * image_size[1])
     new_img = base_image.copy()
+    new_img = new_img.resize(super_size)
     translation = np.random.uniform(low=-5, high=5, size=2)
     rotation = np.random.uniform(low=-np.pi / 2, high=np.pi / 2)
 
+    side_length = super_size[0] // 3
     if shape == "square":
-        points = calc_square_pos(translation=translation, rotation=rotation)
+        points = calc_square_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
 
     elif shape == "triangle":
-        points = calc_traingle_pos(translation=translation, rotation=rotation)
+        points = calc_traingle_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
 
     draw = ImageDraw.Draw(new_img)
     draw.polygon(points, fill=colors[filling])
     del draw
+    if super_sampling > 1:
+        new_img = new_img.resize(image_size, Image.BILINEAR)
     return new_img
 
 
@@ -161,7 +166,7 @@ def create_images(folder_path = "images\\", n_per_configuration=1, shapes=["squa
     for i in range(n_per_configuration):
         for shape in shapes:
             for filling in fillings:
-                new_img = make_image(base_image, shape, filling)
+                new_img = make_image(base_image, shape, filling, super_sampling=4)
                 img_name = folder_path + "%s_%s_%s.png" %(image_number, shape, filling)
 
                 image_number += 1
