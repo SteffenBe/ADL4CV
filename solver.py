@@ -82,6 +82,8 @@ class Solver(object):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
+        print("DID THIS RELOAD?")
+
         print('START TRAIN.')
         
         print("hä?")
