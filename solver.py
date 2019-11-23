@@ -82,11 +82,7 @@ class Solver(object):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
-        print("DID THIS RELOAD?")
-
         print('START TRAIN.')
-        
-        print("hä?")
 
         for epoch in range(num_epochs):
             # TRAINING
@@ -102,11 +98,10 @@ class Solver(object):
                 
                 optim.zero_grad()
                 x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative = model(inputs)
-                print("test if loaded")
-                print("before loss")
+                # print("before loss")
 
                 loss = self.loss_func(x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative)
-                print("after loss")
+                # print("after loss")
                 loss.backward()
                 optim.step()
 
@@ -119,7 +114,7 @@ class Solver(object):
                          iter_per_epoch * num_epochs,
                          train_loss))
 
-            _, preds = torch.max(outputs, 1)
+            # _, preds = torch.max(outputs, 1)
 
             # Only allow images/pixels with label >= 0 e.g. for segmentation
             # targets_mask = targets >= 0
