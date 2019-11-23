@@ -86,9 +86,7 @@ class Solver(object):
 
         for epoch in range(num_epochs):
             # TRAINING
-            print("very start of it")
             model.train()
-            print("does it get here?")
             for i, batch in enumerate(train_loader, 1):
                 batch = tuple(tensor.to(device) for tensor in batch)
                 inputs = batch[:-1]
