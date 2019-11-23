@@ -134,8 +134,8 @@ class Solver(object):
                 inputs = batch[:-1]
                 targets = batch[-1]
 
-                outputs = model.forward(inputs)
-                loss = self.loss_func(outputs, targets)
+                x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative = model.forward(inputs)
+                loss = self.loss_func(x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative)
                 val_losses.append(loss.detach().numpy())
 
                 #_, preds = torch.max(outputs, 1)
