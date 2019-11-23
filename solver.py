@@ -6,6 +6,40 @@ from torch.autograd import Variable
 
 # From Introduction to Deep Learning exercise templates.
 # The solver is currently specialized for classification tasks.
+
+class triplet_loss(torch.nn.Module):
+
+    def __init__(self, margin=1.):
+        super(triplet_loss, self).__init__()
+        self.margin = margin
+
+    def forward(self, text_positive, image_positive, text_anchor, image_anchor, text_negative, image_negative, average=True):
+
+        dist_pos_text = (text_anchor - text_positive).pow(2).sum(1)
+        dist_neg_text = (text_anchor - text_negative).pow(2).sum(1)
+        loss1 = torch.nn.functional.relu(dist_pos_text - dist_neg_text + self.margin)
+
+        dist_pos_img = (image_anchor - image_positive).pow(2).sum(1)
+        dist_neg_img = (image_anchor - image_positive).pow(2).sum(1)
+        loss2 = torch.nn.functional.relu(dist_pos_img - dist_neg_img + self.margin)
+
+
+        dist_pos_text_img = (text_anchor - image_positive).pow(2).sum(1)
+        dist_neg_text_img = (text_anchor - image_negative).pow(2).sum(1)
+        loss3 = torch.nn.functional.relu(dist_pos_text_img - dist_neg_text_img + self.margin)
+
+
+        dist_pos_img_text = (image_anchor - text_positive).pow(2).sum(1)
+        dist_neg_img_text = (image_anchor - text_negative).pow(2).sum(1)
+        loss4 = torch.nn.functional.relu(dist_pos_img_text - dist_neg_img_text + self.margin)
+
+        losses = loss1 + loss2 + loss3 + loss4
+
+        return losses.mean() if size_average else losses.sum()
+
+
+
+
 class Solver(object):
     default_adam_args = {"lr": 1e-2,
                          "betas": (0.9, 0.999),
@@ -13,7 +47,7 @@ class Solver(object):
                          "weight_decay": 0.0}
 
     def __init__(self, optim=torch.optim.Adam, optim_args={},
-                 loss_func=torch.nn.CrossEntropyLoss()):
+                 loss_func=triplet_loss()):
         optim_args_merged = self.default_adam_args.copy()
         optim_args_merged.update(optim_args)
         self.optim_args = optim_args_merged
@@ -50,11 +84,13 @@ class Solver(object):
 
         print('START TRAIN.')
         
-    
+        print("hä?")
 
         for epoch in range(num_epochs):
             # TRAINING
+            print("very start of it")
             model.train()
+            print("does it get here?")
             for i, batch in enumerate(train_loader, 1):
                 batch = tuple(tensor.to(device) for tensor in batch)
                 inputs = batch[:-1]
@@ -64,7 +100,9 @@ class Solver(object):
                 
                 optim.zero_grad()
                 outputs = model(inputs)
+                print("before loss")
                 loss = self.loss_func(outputs, targets)
+                print("after loss")
                 loss.backward()
                 optim.step()
 
@@ -80,13 +118,13 @@ class Solver(object):
             _, preds = torch.max(outputs, 1)
 
             # Only allow images/pixels with label >= 0 e.g. for segmentation
-            targets_mask = targets >= 0
-            train_acc = np.mean((preds == targets)[targets_mask].detach().numpy())
-            self.train_acc_history.append(train_acc)
+            # targets_mask = targets >= 0
+            # train_acc = np.mean((preds == targets)[targets_mask].detach().numpy())
+            # self.train_acc_history.append(train_acc)
             if log_nth:
                 print('[Epoch %d/%d] TRAIN acc/loss: %.3f/%.3f' % (epoch + 1,
                                                                    num_epochs,
-                                                                   train_acc,
+                                                                   0.,
                                                                    train_loss))
             # VALIDATION
             val_losses = []
@@ -101,15 +139,16 @@ class Solver(object):
                 loss = self.loss_func(outputs, targets)
                 val_losses.append(loss.detach().numpy())
 
-                _, preds = torch.max(outputs, 1)
+                #_, preds = torch.max(outputs, 1)
 
                 # Only allow images/pixels with target >= 0 e.g. for segmentation
-                targets_mask = targets >= 0
-                scores = np.mean((preds == targets)[targets_mask].detach().numpy())
-                val_scores.append(scores)
+                #targets_mask = targets >= 0
+                #scores = np.mean((preds == targets)[targets_mask].detach().numpy())
+                #val_scores.append(scores)
 
             model.train()
-            val_acc, val_loss = np.mean(val_scores), np.mean(val_losses)
+            # val_acc, val_loss = np.mean(val_scores), np.mean(val_losses)
+            val_acc, val_loss = 0., np.mean(val_losses)
             self.val_acc_history.append(val_acc)
             self.val_loss_history.append(val_loss)
             if log_nth:
