@@ -101,9 +101,11 @@ class Solver(object):
                 batch_size = targets.size(0)
                 
                 optim.zero_grad()
-                outputs = model(inputs)
+                x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative = model(inputs)
+                print("test if loaded")
                 print("before loss")
-                loss = self.loss_func(outputs, targets)
+
+                loss = self.loss_func(x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative)
                 print("after loss")
                 loss.backward()
                 optim.step()
