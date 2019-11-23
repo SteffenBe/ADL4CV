@@ -35,7 +35,7 @@ class triplet_loss(torch.nn.Module):
 
         losses = loss1 + loss2 + loss3 + loss4
 
-        return losses.mean() if size_average else losses.sum()
+        return losses.mean() if average else losses.sum()
 
 
 
