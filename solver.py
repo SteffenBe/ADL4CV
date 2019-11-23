@@ -15,20 +15,24 @@ class triplet_loss(torch.nn.Module):
 
     def forward(self, text_positive, image_positive, text_anchor, image_anchor, text_negative, image_negative, average=True):
 
+        # Calculate distances and loss intra-modality for text only
         dist_pos_text = (text_anchor - text_positive).pow(2).sum(1)
         dist_neg_text = (text_anchor - text_negative).pow(2).sum(1)
         loss1 = torch.nn.functional.relu(dist_pos_text - dist_neg_text + self.margin)
 
+        # Calculate distances and loss intra-modality for image only
         dist_pos_img = (image_anchor - image_positive).pow(2).sum(1)
         dist_neg_img = (image_anchor - image_positive).pow(2).sum(1)
         loss2 = torch.nn.functional.relu(dist_pos_img - dist_neg_img + self.margin)
 
-
+        # Calculate distances and loss with different modalities,
+        # having text embeddings as an anchor and image embedding positive/negative examples
         dist_pos_text_img = (text_anchor - image_positive).pow(2).sum(1)
         dist_neg_text_img = (text_anchor - image_negative).pow(2).sum(1)
         loss3 = torch.nn.functional.relu(dist_pos_text_img - dist_neg_text_img + self.margin)
 
-
+        # Calculate distances and loss with different modalities,
+        # having image embeddings as an anchor and text embedding positive/negative examples
         dist_pos_img_text = (image_anchor - text_positive).pow(2).sum(1)
         dist_neg_img_text = (image_anchor - text_negative).pow(2).sum(1)
         loss4 = torch.nn.functional.relu(dist_pos_img_text - dist_neg_img_text + self.margin)
