@@ -3,6 +3,7 @@ import numpy as np
 
 import torch
 from torch.autograd import Variable
+from sklearn.neighbors import KNeighborsClassifier
 
 # From Introduction to Deep Learning exercise templates.
 # The solver is currently specialized for classification tasks.
@@ -40,6 +41,24 @@ class triplet_loss(torch.nn.Module):
         losses = loss1 + loss2 + loss3 + loss4
 
         return losses.mean() if average else losses.sum()
+
+def knn_accuracy(text_embeddings, image_embeddings, labels, n_neighbors=3):
+
+    text_embeddings = text_embeddings.detach().numpy()
+    image_embeddings = image_embeddings.detach().numpy()
+    labels = labels.detach().numpy()
+
+    embeddings = np.concatenate((text_embeddings, image_embeddings))
+    embeddings_labels = np.concatenate((labels, labels))
+
+    knn_classifier = KNeighborsClassifier(n_neighbors=n_neighbors)
+    knn_classifier.fit(embeddings, embeddings_labels)
+
+    overall_accuracy = knn_classifier.score(embeddings, embeddings_labels)
+    text_accuracy = knn_classifier.score(text_embeddings, labels)
+    image_accuracy = knn_classifier.score(image_embeddings, labels)
+
+    return text_accuracy, image_accuracy, overall_accuracy
 
 
 
@@ -116,6 +135,8 @@ class Solver(object):
                          iter_per_epoch * num_epochs,
                          train_loss))
 
+            text_accuracy, image_accuracy, overall_accuracy = knn_accuracy(x_text_anchor, x_image_anchor, targets)
+
             # _, preds = torch.max(outputs, 1)
 
             # Only allow images/pixels with label >= 0 e.g. for segmentation
@@ -125,7 +146,7 @@ class Solver(object):
             if log_nth:
                 print('[Epoch %d/%d] TRAIN acc/loss: %.3f/%.3f' % (epoch + 1,
                                                                    num_epochs,
-                                                                   0.,
+                                                                   overall_accuracy,
                                                                    train_loss))
             # VALIDATION
             val_losses = []
@@ -140,16 +161,18 @@ class Solver(object):
                 loss = self.loss_func(x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative)
                 val_losses.append(loss.detach().numpy())
 
+                text_accuracy, image_accuracy, overall_accuracy = knn_accuracy(x_text_anchor, x_image_anchor, targets)
+
                 #_, preds = torch.max(outputs, 1)
 
                 # Only allow images/pixels with target >= 0 e.g. for segmentation
                 #targets_mask = targets >= 0
                 #scores = np.mean((preds == targets)[targets_mask].detach().numpy())
-                #val_scores.append(scores)
+                val_scores.append(overall_accuracy)
 
             model.train()
             # val_acc, val_loss = np.mean(val_scores), np.mean(val_losses)
-            val_acc, val_loss = 0., np.mean(val_losses)
+            val_acc, val_loss = np.mean(val_scores), np.mean(val_losses)
             self.val_acc_history.append(val_acc)
             self.val_loss_history.append(val_loss)
             if log_nth:
