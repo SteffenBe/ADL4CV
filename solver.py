@@ -147,7 +147,7 @@ class Solver(object):
                 print('[Epoch %d/%d] TRAIN acc/loss: %.3f/%.3f; Text only: %s; Image only: %s' % (epoch + 1,
                                                                    num_epochs,
                                                                    overall_accuracy,
-                                                                   train_loss, text_accuracy, image_accuracy))
+                                                                   np.mean(self.train_loss_history[-log_nth:]), text_accuracy, image_accuracy))
             # VALIDATION
             val_losses = []
             val_scores = []
