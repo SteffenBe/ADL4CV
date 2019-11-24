@@ -42,7 +42,7 @@ class triplet_loss(torch.nn.Module):
 
         return losses.mean() if average else losses.sum()
 
-def knn_accuracy(text_embeddings, image_embeddings, labels, n_neighbors=3):
+def knn_accuracy(text_embeddings, image_embeddings, labels, n_neighbors=5):
 
     text_embeddings = text_embeddings.detach().numpy()
     image_embeddings = image_embeddings.detach().numpy()
@@ -144,10 +144,10 @@ class Solver(object):
             # train_acc = np.mean((preds == targets)[targets_mask].detach().numpy())
             # self.train_acc_history.append(train_acc)
             if log_nth:
-                print('[Epoch %d/%d] TRAIN acc/loss: %.3f/%.3f' % (epoch + 1,
+                print('[Epoch %d/%d] TRAIN acc/loss: %.3f/%.3f; Text only: %s; Image only: %s' % (epoch + 1,
                                                                    num_epochs,
                                                                    overall_accuracy,
-                                                                   train_loss))
+                                                                   train_loss, text_accuracy, image_accuracy))
             # VALIDATION
             val_losses = []
             val_scores = []
@@ -176,9 +176,9 @@ class Solver(object):
             self.val_acc_history.append(val_acc)
             self.val_loss_history.append(val_loss)
             if log_nth:
-                print('[Epoch %d/%d] VAL   acc/loss: %.3f/%.3f' % (epoch + 1,
+                print('[Epoch %d/%d] VAL   acc/loss: %.3f/%.3f; Text only: %s; Image only: %s' % (epoch + 1,
                                                                    num_epochs,
                                                                    val_acc,
-                                                                   val_loss))
+                                                                   val_loss, text_accuracy, image_accuracy))
 
         print('FINISH.')
