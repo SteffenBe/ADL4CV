@@ -8,8 +8,8 @@ def count_params(model):
 
 
 def save_model(label, model, verbose=True):
-  f = 'joint_model--{0}--{1}.pt'.format(count_params(joint_model), datetime.utcnow().strftime('%Y-%m-%dT%H-%M'))
-  torch.save(joint_model.state_dict(), f)
+  f = '{0}--{1}--{2}.pt'.format(label, count_params(model), datetime.utcnow().strftime('%Y-%m-%dT%H-%M'))
+  torch.save(model.state_dict(), f)
   if verbose:
     print('Model saved at "{}"'.format(f))
 
