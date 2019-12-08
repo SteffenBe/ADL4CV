@@ -44,9 +44,9 @@ class triplet_loss(torch.nn.Module):
 
 def knn_accuracy(text_embeddings, image_embeddings, labels, n_neighbors=5):
 
-    text_embeddings = text_embeddings.cpu().detach().numpy()
-    image_embeddings = image_embeddings.cpu().detach().numpy()
-    labels = labels.cpu().detach().numpy()
+    text_embeddings = text_embeddings.detach().cpu().numpy()
+    image_embeddings = image_embeddings.detach().cpu().numpy()
+    labels = labels.detach().cpu().numpy()
 
     embeddings = np.concatenate((text_embeddings, image_embeddings))
     embeddings_labels = np.concatenate((labels, labels))
@@ -126,7 +126,7 @@ class Solver(object):
                 loss.backward()
                 optim.step()
 
-                self.train_loss_history.append(loss.cpu().detach().numpy())
+                self.train_loss_history.append(loss.detach().cpu().numpy())
                 if log_nth and i % log_nth == 0:
                     last_log_nth_losses = self.train_loss_history[-log_nth:]
                     train_loss = np.mean(last_log_nth_losses)
@@ -154,7 +154,7 @@ class Solver(object):
 
                 x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative = model.forward(inputs)
                 loss = self.loss_func(x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative)
-                val_losses.append(loss.cpu().detach().numpy())
+                val_losses.append(loss.detach().cpu().numpy())
 
                 text_accuracy, image_accuracy, overall_accuracy = knn_accuracy(x_text_anchor, x_image_anchor, targets)
                 val_scores.append(overall_accuracy)
