@@ -52,12 +52,12 @@ def draw_negative_dummyclass(dummy_class, dummy_labels_np):
 
   return np.random.choice(indices)
 
-def make_testset(n_samples, random_seed):
+def make_testset(n_samples, vocab, random_seed):
   np.random.seed(random_seed)
   descriptions, images = generate_pairs(n_samples)
 
   word_sequences = torch.nn.utils.rnn.pad_sequence([
-    torch.tensor(str_to_seq(d)) for d in descriptions
+    torch.tensor(vocab.str_to_seq(d)) for d in descriptions
   ], batch_first=True)
   image_tensors = torch.tensor(images, dtype=torch.float32)
   dummy_labels = torch.from_numpy(np.fromiter((assign_dummy_class(d) for d in descriptions), int))
@@ -65,24 +65,24 @@ def make_testset(n_samples, random_seed):
   return (word_sequences, image_tensors, dummy_labels)
 
 
-def make_dataset(n_samples, random_seed):
+def make_dataset(n_samples, vocab, random_seed):
   np.random.seed(random_seed)
   descriptions, images = generate_pairs(n_samples)
 
   word_sequences = torch.nn.utils.rnn.pad_sequence([
-    torch.tensor(str_to_seq(d)) for d in descriptions
+    torch.tensor(vocab.str_to_seq(d)) for d in descriptions
   ], batch_first=True)
   image_tensors = torch.tensor(images, dtype=torch.float32)
   dummy_labels = torch.from_numpy(np.fromiter((assign_dummy_class(d) for d in descriptions), int))
-  
+
   return torch.utils.data.TensorDataset(word_sequences, image_tensors, dummy_labels)
 
-def make_triplet_dataset(n_samples, random_seed):
+def make_triplet_dataset(n_samples, vocab, random_seed):
   np.random.seed(random_seed)
   descriptions, images = generate_pairs(n_samples)
 
   word_sequences = torch.nn.utils.rnn.pad_sequence([
-    torch.tensor(str_to_seq(d)) for d in descriptions
+    torch.tensor(vocab.str_to_seq(d)) for d in descriptions
   ], batch_first=True)
   image_tensors = torch.tensor(images, dtype=torch.float32)
   dummy_labels_np = np.fromiter((assign_dummy_class(d) for d in descriptions), int)
