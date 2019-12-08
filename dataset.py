@@ -38,19 +38,6 @@ def generate_pairs(n_samples, image_resolution=64):
   return descriptions, images
 
 
-def make_testset(n_samples, vocab, random_seed):
-  np.random.seed(random_seed)
-  descriptions, images = generate_pairs(n_samples)
-
-  word_sequences = torch.nn.utils.rnn.pad_sequence([
-    torch.tensor(vocab.str_to_seq(d)) for d in descriptions
-  ], batch_first=True)
-  image_tensors = torch.tensor(images, dtype=torch.float32)
-  dummy_labels = torch.from_numpy(np.fromiter((_assign_dummy_class(d) for d in descriptions), int))
-
-  return (word_sequences, image_tensors, dummy_labels)
-
-
 def make_dataset(n_samples, vocab, random_seed):
   np.random.seed(random_seed)
   descriptions, images = generate_pairs(n_samples)
