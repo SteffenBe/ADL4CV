@@ -2,8 +2,8 @@ import numpy as np
 import torch
 import itertools
 
-import image_creation
-import text_creation
+from . import image_creation
+from . import text_creation
 
 all_shapes = ["square", "triangle"]
 all_fill_colors = ["blue", "red"]
