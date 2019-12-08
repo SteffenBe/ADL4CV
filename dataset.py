@@ -8,10 +8,10 @@ from . import text_creation
 all_shapes = ["square", "triangle"]
 all_fill_colors = ["blue", "red"]
 
-all_dummy_classes = itertools.product(all_shapes, all_fill_colors)
+all_dummy_classes = list(itertools.product(all_shapes, all_fill_colors))
 
 def assign_dummy_class(desc):
-  """Infers one of the 4 shape/color classes from the description."""
+  """Infers one of the shape/color classes from a description."""
 
   for i, (shape, col) in enumerate(all_dummy_classes):
     if shape in desc and col in desc:
