@@ -10,7 +10,7 @@ all_fill_colors = ["blue", "red"]
 
 all_dummy_classes = list(itertools.product(all_shapes, all_fill_colors))
 
-def assign_dummy_class(desc):
+def _assign_dummy_class(desc):
   """Infers one of the shape/color classes from a description."""
 
   for i, (shape, col) in enumerate(all_dummy_classes):
@@ -38,20 +38,6 @@ def generate_pairs(n_samples, image_resolution=64):
   return descriptions, images
 
 
-def draw_positive_dummyclass(dummy_class, dummy_labels_np):
-
-  # dummy_labels_numpy = dummy_labels.numpy().flatten()
-  indices = np.where(dummy_labels_np == dummy_class)[0]
-
-  return np.random.choice(indices)
-
-def draw_negative_dummyclass(dummy_class, dummy_labels_np):
-
-  # dummy_labels_numpy = dummy_labels.numpy().flatten()
-  indices = np.where(dummy_labels_np != dummy_class)[0]
-
-  return np.random.choice(indices)
-
 def make_testset(n_samples, vocab, random_seed):
   np.random.seed(random_seed)
   descriptions, images = generate_pairs(n_samples)
@@ -60,7 +46,7 @@ def make_testset(n_samples, vocab, random_seed):
     torch.tensor(vocab.str_to_seq(d)) for d in descriptions
   ], batch_first=True)
   image_tensors = torch.tensor(images, dtype=torch.float32)
-  dummy_labels = torch.from_numpy(np.fromiter((assign_dummy_class(d) for d in descriptions), int))
+  dummy_labels = torch.from_numpy(np.fromiter((_assign_dummy_class(d) for d in descriptions), int))
 
   return (word_sequences, image_tensors, dummy_labels)
 
@@ -73,9 +59,19 @@ def make_dataset(n_samples, vocab, random_seed):
     torch.tensor(vocab.str_to_seq(d)) for d in descriptions
   ], batch_first=True)
   image_tensors = torch.tensor(images, dtype=torch.float32)
-  dummy_labels = torch.from_numpy(np.fromiter((assign_dummy_class(d) for d in descriptions), int))
+  dummy_labels = torch.from_numpy(np.fromiter((_assign_dummy_class(d) for d in descriptions), int))
 
   return torch.utils.data.TensorDataset(word_sequences, image_tensors, dummy_labels)
+
+
+def _draw_positive_dummyclass(dummy_class, dummy_labels_np):
+  indices = np.where(dummy_labels_np == dummy_class)[0]
+  return np.random.choice(indices)
+
+def _draw_negative_dummyclass(dummy_class, dummy_labels_np):
+  indices = np.where(dummy_labels_np != dummy_class)[0]
+  return np.random.choice(indices)
+
 
 def make_triplet_dataset(n_samples, vocab, random_seed):
   np.random.seed(random_seed)
@@ -85,7 +81,7 @@ def make_triplet_dataset(n_samples, vocab, random_seed):
     torch.tensor(vocab.str_to_seq(d)) for d in descriptions
   ], batch_first=True)
   image_tensors = torch.tensor(images, dtype=torch.float32)
-  dummy_labels_np = np.fromiter((assign_dummy_class(d) for d in descriptions), int)
+  dummy_labels_np = np.fromiter((_assign_dummy_class(d) for d in descriptions), int)
   dummy_labels = torch.from_numpy(dummy_labels_np)
 
   word_sequences_positive = word_sequences.clone()
@@ -94,8 +90,8 @@ def make_triplet_dataset(n_samples, vocab, random_seed):
   image_tensors_negative = image_tensors.clone()
 
   for i, dummy_label in enumerate(dummy_labels_np):
-    indice_pos = draw_positive_dummyclass(dummy_label, dummy_labels_np)
-    indice_neg = draw_negative_dummyclass(dummy_label, dummy_labels_np)
+    indice_pos = _draw_positive_dummyclass(dummy_label, dummy_labels_np)
+    indice_neg = _draw_negative_dummyclass(dummy_label, dummy_labels_np)
 
     word_sequences_positive[i] = word_sequences[indice_pos]
     word_sequences_negative[i] = word_sequences[indice_neg]

@@ -1,9 +1,17 @@
 import torch
 from torch import nn
+from datetime import datetime
 
 def count_params(model):
   """Returns the total number of trainable parameters in a torch module."""
   return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def save_model(label, model, verbose=True):
+  f = 'joint_model--{0}--{1}.pt'.format(count_params(joint_model), datetime.utcnow().strftime('%Y-%m-%dT%H-%M'))
+  torch.save(joint_model.state_dict(), f)
+  if verbose:
+    print('Model saved at "{}"'.format(f))
 
 
 class TextEncoder(nn.Module):
