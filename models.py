@@ -22,12 +22,15 @@ class TextEncoder(nn.Module):
     super().__init__()
     self.word_embedding = nn.Embedding(vocab_size, word_embedding_size, padding_idx=0)
     self.rnn = nn.LSTM(word_embedding_size, out_size, batch_first=True)
+    self.final_linear = nn.Linear(out_size, out_size)
   
   def forward(self, x):
     x = self.word_embedding(x)
     x, (hidden, cell) = self.rnn(x)
-    # Return last output of the sequence (final embedding).
-    return x[:, -1, :]
+    # Use last output of the sequence (final embedding).
+    x = x[:, -1, :]
+    x = self.final_linear(x)
+    return x
 
 
 class ImageEncoder(nn.Module):
