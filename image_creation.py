@@ -139,13 +139,14 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
     new_img = new_img.resize(super_size)
     translation = np.random.uniform(low=-5, high=5, size=2)
     rotation = np.random.uniform(low=-np.pi / 2, high=np.pi / 2)
+    scale = np.random.uniform(low=0.75, high=1.5)
 
-    side_length = super_size[0] // 3
+    side_length = super_size[0] / 3 * scale
     if shape == "square":
         points = calc_square_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
 
     elif shape == "triangle":
-        points = calc_traingle_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
+        points = calc_traingle_pos(side_length * 1.5, translation=translation, rotation=rotation, image_dim=super_size)
 
     draw = ImageDraw.Draw(new_img)
     draw.polygon(points, fill=colors[filling])
@@ -182,4 +183,4 @@ if __name__ == "__main__":
         save_default_image()
 
 
-    create_images(n_per_configuration=5)
+    create_images(n_per_configuration=10)
