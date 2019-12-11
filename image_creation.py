@@ -48,9 +48,9 @@ def read_image_to_np(image_path="default_image.png"):
     return np_image
 
 
-def calc_traingle_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=default_image_size):
+def calc_triangle_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=default_image_size):
 
-    center_point = [int(image_dim[0]/2) + translation[0], int(image_dim[0]/2) + translation[1]]
+    center_point = [int(image_dim[0]/2), int(image_dim[0]/2)]
 
     dist = side_length/np.sqrt(3)
 
@@ -73,7 +73,7 @@ def calc_traingle_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=
 
 def calc_square_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=default_image_size):
 
-    center_point = [int(image_dim[0] / 2) + translation[0], int(image_dim[0] / 2) + translation[1]]
+    center_point = [int(image_dim[0] / 2), int(image_dim[0] / 2)]
 
     center_point_math = notation_array_to_point(center_point)
 
@@ -152,7 +152,7 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
         points = calc_square_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
 
     elif shape == "triangle":
-        points = calc_traingle_pos(side_length * 1.5, translation=translation, rotation=rotation, image_dim=super_size)
+        points = calc_triangle_pos(side_length * 1.5, translation=translation, rotation=rotation, image_dim=super_size)
 
     draw = ImageDraw.Draw(new_img)
     draw.polygon(points, fill=colors[filling])
@@ -162,23 +162,23 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
     return new_img
 
 
-def create_images(folder_path = "images\\", n_per_configuration=1, shapes=["square", "triangle"], fillings=["blue", "red"]):
-
-    base_image = Image.open("default_image.png")
-
-    n_images_total = len(shapes) * len(fillings) * n_per_configuration
-
-    image_number = 0
-
-    for i in range(n_per_configuration):
-        for shape in shapes:
-            for filling in fillings:
-                new_img = make_image(base_image, shape, filling, super_sampling=4)
-                img_name = folder_path + "%s_%s_%s.png" %(image_number, shape, filling)
-
-                image_number += 1
-
-                new_img.save(img_name)
+# def create_images(folder_path = "images\\", n_per_configuration=1, shapes=["square", "triangle"], fillings=["blue", "red"]):
+#
+#     base_image = Image.open("default_image.png")
+#
+#     n_images_total = len(shapes) * len(fillings) * n_per_configuration
+#
+#     image_number = 0
+#
+#     for i in range(n_per_configuration):
+#         for shape in shapes:
+#             for filling in fillings:
+#                 new_img = make_image(base_image, shape, filling, super_sampling=4)
+#                 img_name = folder_path + "%s_%s_%s.png" %(image_number, shape, filling)
+#
+#                 image_number += 1
+#
+#                 new_img.save(img_name)
 
 
 if __name__ == "__main__":
@@ -187,6 +187,3 @@ if __name__ == "__main__":
         Image.open("default_image.png")
     except:
         save_default_image()
-
-
-    create_images(n_per_configuration=10)
