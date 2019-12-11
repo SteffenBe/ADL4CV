@@ -105,6 +105,23 @@ def calc_square_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=de
 
     return [top_l_rotate, bot_l_rotate, bot_r_rotate, top_r_rotate]
 
+def calc_star_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=default_image_size):
+
+    center_point = [int(image_dim[0] / 2), int(image_dim[0] / 2)]
+    center_point_math = notation_array_to_point(center_point)
+    center_point_math_translated = [center_point_math[0] + translation[0], center_point_math[1] + translation[1]]
+    inner_radius = side_length/(((1 + 5 ** 0.5) / 2) + 1)
+
+    top_point = [center_point_math_translated[0], center_point_math_translated[1] + side_length]
+    pentagon_point = rotate(center_point_math_translated,
+                            [center_point_math_translated[0], center_point_math_translated[1]+inner_radius],
+                            2*np.pi*36/360)
+
+    star_points = [notation_point_to_array(rotate(center_point_math_translated, top_point, rotation+(2*np.pi/5)*i)) for i in range(5)]
+    pentagon_points = [notation_point_to_array(rotate(center_point_math_translated, pentagon_point, rotation+(2*np.pi/5)*i)) for i in range(5)]
+    points = star_points + pentagon_points
+
+    return [points[i] for i in [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]]
 
 def rotate(origin, point, angle):
     """
@@ -154,6 +171,10 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
     elif shape == "triangle":
         points = calc_triangle_pos(side_length * 1.5, translation=translation, rotation=rotation, image_dim=super_size)
 
+    elif shape == "star":
+        points = calc_star_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
+
+    print(points)
     draw = ImageDraw.Draw(new_img)
     draw.polygon(points, fill=colors[filling])
     del draw
@@ -183,7 +204,13 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
 
 if __name__ == "__main__":
 
-    try:
-        Image.open("default_image.png")
-    except:
-        save_default_image()
+    base_image = make_default_image()
+
+    star_img = make_image(base_image=base_image, shape="star", filling="red", super_sampling=2)
+    star_img.show()
+    star_img.save("star.jpg")
+
+    # try:
+    #     Image.open("default_image.png")
+    # except:
+    #     save_default_image()
