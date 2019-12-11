@@ -52,7 +52,7 @@ class triplet_loss(torch.nn.Module):
 class triplet_loss_original(torch.nn.Module):
 
     def __init__(self, margin=1.):
-        super(triplet_loss, self).__init__()
+        super(triplet_loss_original, self).__init__()
         self.margin = margin
 
     def forward(self, text_positive, image_positive, text_anchor, image_anchor, text_negative, image_negative, average=True):
