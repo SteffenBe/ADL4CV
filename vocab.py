@@ -23,7 +23,7 @@ class Vocabulary:
     with the special marker END_index.
     """
 
-    input = re.sub(r"[^a-zA-Z]+", "", input.lower())
+    input = re.sub(r"[^a-zA-Z\s]+", "", input.lower())
     input = re.sub(r"\s+", " ", input)
     input_words = input.split(" ")
     return [self.indices_by_word.get(w, self.OOV_index) for w in input_words] \
