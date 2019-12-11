@@ -7,6 +7,47 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # From Introduction to Deep Learning exercise templates.
 # The solver is currently specialized for classification tasks.
+class triplet_loss_original(torch.nn.Module):
+
+    def __init__(self, margin=1.):
+        super(triplet_loss, self).__init__()
+        self.margin = margin
+
+    def forward(self, text_positive, image_positive, text_anchor, image_anchor, text_negative, image_negative, average=True):
+
+        # Calculate distances and loss intra-modality for text only
+        dist_pos_text = (text_anchor - text_positive).pow(2).sum(1)
+        dist_neg_text = (text_anchor - text_negative).pow(2).sum(1)
+        loss1 = torch.nn.functional.relu(dist_pos_text - dist_neg_text + self.margin)
+
+        # Calculate distances and loss intra-modality for image only
+        dist_pos_img = (image_anchor - image_positive).pow(2).sum(1)
+        dist_neg_img = (image_anchor - image_positive).pow(2).sum(1)
+        loss2 = torch.nn.functional.relu(dist_pos_img - dist_neg_img + self.margin)
+
+        # Calculate distances and loss with different modalities,
+        # having text embeddings as an anchor and image embedding positive/negative examples
+        dist_pos_text_img = (text_anchor - image_positive).pow(2).sum(1)
+        dist_neg_text_img = (text_anchor - image_negative).pow(2).sum(1)
+        loss3 = torch.nn.functional.relu(dist_pos_text_img - dist_neg_text_img + self.margin)
+
+        # Calculate distances and loss with different modalities,
+        # having image embeddings as an anchor and text embedding positive/negative examples
+        dist_pos_img_text = (image_anchor - text_positive).pow(2).sum(1)
+        dist_neg_img_text = (image_anchor - text_negative).pow(2).sum(1)
+        loss4 = torch.nn.functional.relu(dist_pos_img_text - dist_neg_img_text + self.margin)
+
+        # dist_pos_img_text = (image_anchor - text_positive).pow(2).sum(1)
+        # dist_neg_img_img = (image_anchor - image_negative).pow(2).sum(1)
+
+        loss5 = torch.nn.functional.relu(dist_pos_text - dist_neg_text_img + self.margin)
+        loss6 = torch.nn.functional.relu(dist_pos_text_img - dist_neg_text + self.margin)
+        loss7 = torch.nn.functional.relu(dist_pos_img_text - dist_neg_img + self.margin)
+        loss8 = torch.nn.functional.relu(dist_pos_img - dist_neg_img_text + self.margin)
+
+        losses = loss1 + loss2 + loss3 + loss4 + loss5 + loss6 + loss7 + loss8
+
+        return losses.mean() if average else losses.sum()
 
 class triplet_loss(torch.nn.Module):
 
