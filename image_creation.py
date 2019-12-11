@@ -174,7 +174,6 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
     elif shape == "star":
         points = calc_star_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
 
-    print(points)
     draw = ImageDraw.Draw(new_img)
     draw.polygon(points, fill=colors[filling])
     del draw
