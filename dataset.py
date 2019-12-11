@@ -6,7 +6,7 @@ from . import image_creation
 from . import text_creation
 
 all_shapes = ["square", "triangle"]
-all_fill_colors = ["blue", "red"]
+all_fill_colors = ["blue", "red", "green", "yellow", "purple", "cyan"]
 
 all_dummy_classes = list(itertools.product(all_shapes, all_fill_colors))
 
