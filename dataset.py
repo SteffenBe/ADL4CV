@@ -19,16 +19,26 @@ def _assign_dummy_class(desc):
   raise ValueError('could not determine class of: ' + desc)
 
 
-def generate_pairs(n_samples, image_resolution=64):
+def generate_pairs(n_samples, image_resolution=64, blacklist=[]):
   """Generates a set of matching description/image pairs."""
+
+  # Validate tuple order in blacklist to prevent passing in wrong order by accident.
+  if len(blacklist) > 0 and not isinstance(blacklist[0], tuple):
+    raise ValueError("Blacklist should be a list of tuples!")
+  if len(blacklist) > 0 and (blacklist[0][0] in all_fill_colors or blacklist[0][1] in all_shapes):
+    raise ValueError("Blacklist should consist of (shape, color) tuples, not (color, shape) tuples!")
 
   descriptions = np.ndarray((n_samples,), object)
   images = np.ndarray((n_samples, image_resolution, image_resolution, 3), np.float)
 
   background = image_creation.make_default_image('white')
   for i in range(n_samples):
+    # Pick a non-blacklisted shape/color combination.
     shape = np.random.choice(all_shapes)
     fill_color = np.random.choice(all_fill_colors)
+    while (shape, fill_color) in blacklist:
+      shape = np.random.choice(all_shapes)
+      fill_color = np.random.choice(all_fill_colors)
 
     desc = text_creation.generate_single_description(shape, fill_color)
     img = image_creation.make_image(background, shape, fill_color, (image_resolution, image_resolution), super_sampling=4)
@@ -38,9 +48,9 @@ def generate_pairs(n_samples, image_resolution=64):
   return descriptions, images
 
 
-def make_dataset(n_samples, vocab, random_seed):
+def make_dataset(n_samples, vocab, random_seed, blacklist=[]):
   np.random.seed(random_seed)
-  descriptions, images = generate_pairs(n_samples)
+  descriptions, images = generate_pairs(n_samples, blacklist=blacklist)
 
   word_sequences = torch.nn.utils.rnn.pad_sequence([
     torch.tensor(vocab.str_to_seq(d)) for d in descriptions
@@ -60,9 +70,9 @@ def _draw_negative_dummyclass(dummy_class, dummy_labels_np):
   return np.random.choice(indices)
 
 
-def make_triplet_dataset(n_samples, vocab, random_seed):
+def make_triplet_dataset(n_samples, vocab, random_seed, blacklist=[]):
   np.random.seed(random_seed)
-  descriptions, images = generate_pairs(n_samples)
+  descriptions, images = generate_pairs(n_samples, blacklist=blacklist)
 
   word_sequences = torch.nn.utils.rnn.pad_sequence([
     torch.tensor(vocab.str_to_seq(d)) for d in descriptions
