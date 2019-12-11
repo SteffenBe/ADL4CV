@@ -7,7 +7,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 # From Introduction to Deep Learning exercise templates.
 # The solver is currently specialized for classification tasks.
-class triplet_loss_original(torch.nn.Module):
+class triplet_loss(torch.nn.Module):
 
     def __init__(self, margin=1.):
         super(triplet_loss, self).__init__()
@@ -49,7 +49,7 @@ class triplet_loss_original(torch.nn.Module):
 
         return losses.mean() if average else losses.sum()
 
-class triplet_loss(torch.nn.Module):
+class triplet_loss_original(torch.nn.Module):
 
     def __init__(self, margin=1.):
         super(triplet_loss, self).__init__()
