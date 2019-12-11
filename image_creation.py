@@ -252,6 +252,8 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
 
 if __name__ == "__main__":
 
+    a = 2
+
     # base_image = make_default_image(background="black")
     # base_image = make_default_image()
     #
