@@ -1,3 +1,4 @@
+import re
 from typing import Iterable
 
 PAD = "."
@@ -17,10 +18,13 @@ class Vocabulary:
   def str_to_seq(self, input: str):
     """
     Converts a string to a sequence of integers representing its word indices.
-    All unknown words will be mapped to OOV_index and the sequence will be terminated
+    Special characters are removed and all words converted to lower-case.
+    All unknown words are mapped to OOV_index and the sequence is terminated
     with the special marker END_index.
     """
 
+    input = re.sub(r"[^a-zA-Z]+", "", input.lower())
+    input = re.sub(r"\s+", " ", input)
     input_words = input.split(" ")
     return [self.indices_by_word.get(w, self.OOV_index) for w in input_words] \
            + [self.END_index]
