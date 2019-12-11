@@ -123,6 +123,35 @@ def calc_star_pos(side_length=20, translation=[0, 0], rotation=0, image_dim=defa
 
     return [points[i] for i in [0, 5, 1, 6, 2, 7, 3, 8, 4, 9]]
 
+def calc_ellipse_points(side_length=20, translation=[0, 0], image_dim=default_image_size):
+
+    center_point = [int(image_dim[0] / 2), int(image_dim[0] / 2)]
+
+    center_point_math = notation_array_to_point(center_point)
+
+    center_point_math_translated = [center_point_math[0] + translation[0], center_point_math[1] + translation[1]]
+
+    bottom_left_point = [center_point_math_translated[0] - side_length / 2,
+                         center_point_math_translated[1] + side_length / 4]
+
+    top_right_point = [center_point_math_translated[0] + side_length / 2,
+                       center_point_math_translated[1] - side_length / 4]
+
+    # bottom_left_point = [center_point_math_translated[0] - side_length / 2,
+    #                      center_point_math_translated[1] - side_length / 4]
+    #
+    # top_right_point = [center_point_math_translated[0] + side_length / 2,
+    #                    center_point_math_translated[1] + side_length / 4]
+
+    # print(bottom_left_point)
+    # print(top_right_point)
+
+    # bottom_left_point = notation_point_to_array(bottom_left_point)
+    # top_right_point = notation_point_to_array(top_right_point)
+
+    return [notation_point_to_array(bottom_left_point), notation_point_to_array(top_right_point)]
+    # return (bottom_left_point[0], bottom_left_point[1], top_right_point[0], top_right_point[1])
+
 def rotate(origin, point, angle):
     """
     Rotate a point counterclockwise by a given angle around a given origin.
@@ -164,18 +193,40 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
     rotation = np.random.uniform(low=-np.pi / 2, high=np.pi / 2)
     scale = np.random.uniform(low=0.75, high=1.5)
 
+    draw = ImageDraw.Draw(new_img)
+
     side_length = super_size[0] / 3 * scale
     if shape == "square":
         points = calc_square_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
+        draw.polygon(points, fill=colors[filling])
 
     elif shape == "triangle":
         points = calc_triangle_pos(side_length * 1.5, translation=translation, rotation=rotation, image_dim=super_size)
+        draw.polygon(points, fill=colors[filling])
 
     elif shape == "star":
         points = calc_star_pos(side_length, translation=translation, rotation=rotation, image_dim=super_size)
+        draw.polygon(points, fill=colors[filling])
 
-    draw = ImageDraw.Draw(new_img)
-    draw.polygon(points, fill=colors[filling])
+    elif shape == "ellipse":
+        helper_img = new_img.copy()
+        points = calc_ellipse_points(side_length=side_length*1.5, translation=translation, image_dim=super_size)
+        draw.ellipse(points, fill=colors[filling])
+        print(rotation)
+        print(360*rotation/(2*np.pi))
+        new_img = new_img.convert('RGBA')
+        new_img = new_img.rotate(360*rotation/(2*np.pi))
+        helper_img.paste(new_img, (0,0), new_img)
+        new_img = helper_img.copy()
+        new_img = new_img.convert('RGB')
+        del helper_img
+
+    else:
+        raise ValueError("Image creation process not defined for shape '%s'" % shape)
+
+
+    # draw = ImageDraw.Draw(new_img)
+    # draw.polygon(points, fill=colors[filling])
     del draw
     if super_sampling > 1:
         new_img = new_img.resize(image_size, Image.BILINEAR)
@@ -203,13 +254,8 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
 
 if __name__ == "__main__":
 
-    base_image = make_default_image()
-
-    star_img = make_image(base_image=base_image, shape="star", filling="red", super_sampling=2)
-    star_img.show()
-    star_img.save("star.jpg")
-
-    # try:
-    #     Image.open("default_image.png")
-    # except:
-    #     save_default_image()
+    # base_image = make_default_image(background="black")
+    # base_image = make_default_image()
+    #
+    # ex_img = make_image(base_image=base_image, shape="ellipse", filling="red", super_sampling=2)
+    # ex_img.show()
