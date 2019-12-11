@@ -212,8 +212,6 @@ def make_image(base_image, shape, filling, image_size=default_image_size, super_
         helper_img = new_img.copy()
         points = calc_ellipse_points(side_length=side_length*1.5, translation=translation, image_dim=super_size)
         draw.ellipse(points, fill=colors[filling])
-        print(rotation)
-        print(360*rotation/(2*np.pi))
         new_img = new_img.convert('RGBA')
         new_img = new_img.rotate(360*rotation/(2*np.pi))
         helper_img.paste(new_img, (0,0), new_img)
