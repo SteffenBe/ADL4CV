@@ -2,8 +2,11 @@ import numpy as np
 import torch
 import itertools
 
-from . import image_creation
-from . import text_creation
+# from . import image_creation
+# from . import text_creation
+
+import image_creation
+import text_creation
 
 from torch.utils.data import TensorDataset
 
@@ -71,8 +74,7 @@ def _draw_negative_dummyclass(dummy_class, dummy_labels_np):
   indices = np.where(dummy_labels_np != dummy_class)[0]
   return np.random.choice(indices)
 
-
-def make_triplet_dataset(n_samples, vocab, random_seed, blacklist=[]):
+def make_triplet_dataset_original(n_samples, vocab, random_seed, blacklist=[]):
   np.random.seed(random_seed)
   descriptions, images = generate_pairs(n_samples, blacklist=blacklist)
 
@@ -98,9 +100,22 @@ def make_triplet_dataset(n_samples, vocab, random_seed, blacklist=[]):
     image_tensors_negative[i] = image_tensors[indice_neg]
 
   return torch.utils.data.TensorDataset(word_sequences_positive, image_tensors_positive,
-                                        word_sequences, image_tensors, 
-                                        word_sequences_negative, image_tensors_negative, 
+                                        word_sequences, image_tensors,
+                                        word_sequences_negative, image_tensors_negative,
                                         dummy_labels)
+
+def make_triplet_dataset(n_samples, vocab, random_seed, blacklist=[], train=True):
+  np.random.seed(random_seed)
+  descriptions, images = generate_pairs(n_samples, blacklist=blacklist)
+
+  word_sequences = torch.nn.utils.rnn.pad_sequence([
+    torch.tensor(vocab.str_to_seq(d)) for d in descriptions
+  ], batch_first=True)
+  image_tensors = torch.tensor(images, dtype=torch.float32)
+  dummy_labels_np = np.fromiter((_assign_dummy_class(d) for d in descriptions), int)
+  dummy_labels = torch.from_numpy(dummy_labels_np)
+
+  return TripletDataset(word_sequences, image_tensors, dummy_labels, train=train)
 
 class TripletDataset(TensorDataset):
   """
@@ -154,7 +169,7 @@ class TripletDataset(TensorDataset):
       text_negative = self.tensors[0][self.test_triplets[index][2]]
       image_negative = self.tensors[1][self.test_triplets[index][2]]
 
-    return tuple([text_positive, image_positive, text_anchor, image_anchor, text_negative, image_negative])
+    return tuple([text_positive, image_positive, text_anchor, image_anchor, text_negative, image_negative, self.tensors[2][index]])
 
   def __len__(self):
     return self.tensors[0].size(0)
