@@ -2,11 +2,9 @@ import numpy as np
 import torch
 import itertools
 
-# from . import image_creation
-# from . import text_creation
+from . import image_creation
+from . import text_creation
 
-import image_creation
-import text_creation
 
 from torch.utils.data import TensorDataset
 
