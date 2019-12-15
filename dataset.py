@@ -147,10 +147,11 @@ class TripletDataset(TensorDataset):
 
   def __getitem__(self, index):
     if self.train:
-      text_anchor, image_anchor, label = self.tensors[0][index], self.tensors[1][index], self.tensors[2][index]
+      text_anchor, image_anchor, label = self.tensors[0][index], self.tensors[1][index], self.tensors[2][index].item()
       #img1, label1 = self.train_data[index], self.train_labels[index].item()
       positive_index = index
       while positive_index == index:
+        print(self.label_to_indices)
         positive_index = np.random.choice(self.label_to_indices[label])
       negative_label = np.random.choice(list(self.labels_set - set([label])))
       negative_index = np.random.choice(self.label_to_indices[negative_label])
