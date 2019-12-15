@@ -151,7 +151,6 @@ class TripletDataset(TensorDataset):
       #img1, label1 = self.train_data[index], self.train_labels[index].item()
       positive_index = index
       while positive_index == index:
-        print(self.label_to_indices)
         positive_index = np.random.choice(self.label_to_indices[label])
       negative_label = np.random.choice(list(self.labels_set - set([label])))
       negative_index = np.random.choice(self.label_to_indices[negative_label])
