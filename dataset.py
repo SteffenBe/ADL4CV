@@ -1,38 +1,33 @@
 import numpy as np
 import torch
 import itertools
+from torch.utils.data import TensorDataset
+
+# Optional module for showing progress bars.
+try: from tqdm import tqdm
+except ModuleNotFoundError: tqdm = lambda x: x
 
 from . import image_creation
 from . import text_creation
 
-
-from torch.utils.data import TensorDataset
 
 all_shapes = ["square", "triangle"]
 all_fill_colors = ["blue", "red", "green", "yellow", "purple", "cyan"]
 
 all_dummy_classes = list(itertools.product(all_shapes, all_fill_colors))
 
-def _assign_dummy_class(desc):
-  """Infers one of the shape/color classes from a description."""
 
-  for i, (shape, col) in enumerate(all_dummy_classes):
-    if shape in desc and col in desc:
-      return i
-  raise ValueError('could not determine class of: ' + desc)
-
-
-def generate_pairs(n_samples, image_resolution=64, blacklist=[]):
-  """Generates a set of matching description/image pairs."""
+def generate_samples(n_samples, image_resolution=64, blacklist=[]):
+  """Returns a generator that yields n_samples times individual tuples of the shape:
+      (description: str,
+        image: numpy array with shape (R, R, C),
+        label: int)"""
 
   # Validate tuple order in blacklist to prevent passing in wrong order by accident.
   if len(blacklist) > 0 and not isinstance(blacklist[0], tuple):
     raise ValueError("Blacklist should be a list of tuples!")
   if len(blacklist) > 0 and (blacklist[0][0] in all_fill_colors or blacklist[0][1] in all_shapes):
     raise ValueError("Blacklist should consist of (shape, color) tuples, not (color, shape) tuples!")
-
-  descriptions = np.ndarray((n_samples,), object)
-  images = np.ndarray((n_samples, image_resolution, image_resolution, 3), np.float)
 
   background = image_creation.make_default_image('white')
   for i in range(n_samples):
@@ -42,78 +37,76 @@ def generate_pairs(n_samples, image_resolution=64, blacklist=[]):
     while (shape, fill_color) in blacklist:
       shape = np.random.choice(all_shapes)
       fill_color = np.random.choice(all_fill_colors)
-
+    
+    label = all_dummy_classes.index((shape, fill_color))
     desc = text_creation.generate_single_description(shape, fill_color)
-    img = image_creation.make_image(background, shape, fill_color, (image_resolution, image_resolution), super_sampling=4)
+    img = image_creation.make_image(background, shape, fill_color, (image_resolution, image_resolution), super_sampling=2)
+    img_np = np.array(img, dtype=np.float32)
+    img_np /= 255.0
 
-    descriptions[i] = desc
-    images[i] = np.array(img) / 255
-  return descriptions, images
+    yield desc, img_np, label
+
+
+def make_samples_numpy(n_samples, image_resolution=64, blacklist=[]):
+  """Like generate_samples, but actually collects all results into numpy arrays.
+  Returns numpy arrays: (
+    descriptions: (N,) string (^= object),
+    images: (N, R, R, C) float,
+    labels: (N,) int
+  )"""
+
+  descriptions = np.ndarray((n_samples,), object)
+  images = np.ndarray((n_samples, image_resolution, image_resolution, 3), np.float)
+  labels = np.ndarray((n_samples,), np.int)
+  
+  generator = generate_samples(n_samples, image_resolution, blacklist=blacklist)
+  if n_samples >= 2000:
+    generator = tqdm(generator, total=n_samples)
+  for i, (description, image, label) in enumerate(generator):
+    descriptions[i] = description
+    images[i] = image
+    labels[i] = label
+  return descriptions, images, labels
+
+
+def make_samples_tensors(n_samples, vocab, image_resolution=64, blacklist=[]):
+  """Generates samples, applies vocabulary mapping and collects them into tensors.
+  Returns: (
+    word_sequences: int tensor shape (N, L) where L is word count of longest description,
+    image_tensors: float tensor shape (N, R, R, C),
+    labels: int tensor shape (N,)
+  )"""
+  # Allocate full tensors exactly like we will store them in the dataset.
+  # Except for descriptions, which need to be padded after knowing all of them.
+  unpadded_word_sequences = [None] * n_samples
+  image_tensors = torch.empty(n_samples, image_resolution, image_resolution, 3, dtype=torch.float32)
+  labels = torch.empty(n_samples, dtype=torch.int)
+  
+  # Fill tensors.
+  generator = generate_samples(n_samples, image_resolution, blacklist=blacklist)
+  if n_samples >= 2000:
+    generator = tqdm(generator, total=n_samples)
+  for i, (description, image, label) in enumerate(generator):
+    seq = vocab.str_to_seq(description)
+    unpadded_word_sequences[i] = torch.tensor(seq, dtype=torch.long)
+    image_tensors[i] = torch.as_tensor(image)
+    labels[i] = label
+
+  word_sequences = torch.nn.utils.rnn.pad_sequence(unpadded_word_sequences, batch_first=True)
+  return word_sequences, image_tensors, labels
 
 
 def make_dataset(n_samples, vocab, random_seed, blacklist=[]):
   np.random.seed(random_seed)
-  descriptions, images = generate_pairs(n_samples, blacklist=blacklist)
+  word_sequences, image_tensors, labels = make_samples_tensors(n_samples, vocab, blacklist=blacklist)
+  return torch.utils.data.TensorDataset(word_sequences, image_tensors, labels)
 
-  word_sequences = torch.nn.utils.rnn.pad_sequence([
-    torch.tensor(vocab.str_to_seq(d)) for d in descriptions
-  ], batch_first=True)
-  image_tensors = torch.tensor(images, dtype=torch.float32)
-  dummy_labels = torch.from_numpy(np.fromiter((_assign_dummy_class(d) for d in descriptions), int))
-
-  return torch.utils.data.TensorDataset(word_sequences, image_tensors, dummy_labels)
-
-
-def _draw_positive_dummyclass(dummy_class, dummy_labels_np):
-  indices = np.where(dummy_labels_np == dummy_class)[0]
-  return np.random.choice(indices)
-
-def _draw_negative_dummyclass(dummy_class, dummy_labels_np):
-  indices = np.where(dummy_labels_np != dummy_class)[0]
-  return np.random.choice(indices)
-
-def make_triplet_dataset_original(n_samples, vocab, random_seed, blacklist=[]):
-  np.random.seed(random_seed)
-  descriptions, images = generate_pairs(n_samples, blacklist=blacklist)
-
-  word_sequences = torch.nn.utils.rnn.pad_sequence([
-    torch.tensor(vocab.str_to_seq(d)) for d in descriptions
-  ], batch_first=True)
-  image_tensors = torch.tensor(images, dtype=torch.float32)
-  dummy_labels_np = np.fromiter((_assign_dummy_class(d) for d in descriptions), int)
-  dummy_labels = torch.from_numpy(dummy_labels_np)
-
-  word_sequences_positive = word_sequences.clone()
-  word_sequences_negative = word_sequences.clone()
-  image_tensors_positive = image_tensors.clone()
-  image_tensors_negative = image_tensors.clone()
-
-  for i, dummy_label in enumerate(dummy_labels_np):
-    indice_pos = _draw_positive_dummyclass(dummy_label, dummy_labels_np)
-    indice_neg = _draw_negative_dummyclass(dummy_label, dummy_labels_np)
-
-    word_sequences_positive[i] = word_sequences[indice_pos]
-    word_sequences_negative[i] = word_sequences[indice_neg]
-    image_tensors_positive[i] = image_tensors[indice_pos]
-    image_tensors_negative[i] = image_tensors[indice_neg]
-
-  return torch.utils.data.TensorDataset(word_sequences_positive, image_tensors_positive,
-                                        word_sequences, image_tensors,
-                                        word_sequences_negative, image_tensors_negative,
-                                        dummy_labels)
 
 def make_triplet_dataset(n_samples, vocab, random_seed, blacklist=[], train=True):
   np.random.seed(random_seed)
-  descriptions, images = generate_pairs(n_samples, blacklist=blacklist)
+  word_sequences, image_tensors, labels = make_samples_tensors(n_samples, vocab, blacklist=blacklist)
+  return TripletDataset(word_sequences, image_tensors, labels, train=train)
 
-  word_sequences = torch.nn.utils.rnn.pad_sequence([
-    torch.tensor(vocab.str_to_seq(d)) for d in descriptions
-  ], batch_first=True)
-  image_tensors = torch.tensor(images, dtype=torch.float32)
-  dummy_labels_np = np.fromiter((_assign_dummy_class(d) for d in descriptions), int)
-  dummy_labels = torch.from_numpy(dummy_labels_np)
-
-  return TripletDataset(word_sequences, image_tensors, dummy_labels, train=train)
 
 class TripletDataset(TensorDataset):
   """
