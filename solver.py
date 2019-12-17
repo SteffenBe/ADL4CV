@@ -1,5 +1,6 @@
 from random import shuffle
 import numpy as np
+import pickle
 
 import torch
 from torch.autograd import Variable
@@ -128,8 +129,9 @@ class Solver(object):
         self.train_acc_history = []
         self.val_acc_history = []
         self.val_loss_history = []
+        self.model_snapshots = []
 
-    def train(self, model, train_loader, val_loader, num_epochs=10, log_nth=0):
+    def train(self, model, train_loader, val_loader, num_epochs=10, log_nth=0, snapshot_interval=0):
         """
         Train a given model with the provided data.
 
@@ -210,5 +212,13 @@ class Solver(object):
                                                                    num_epochs,
                                                                    val_acc,
                                                                    val_loss, text_accuracy, image_accuracy))
+            
+            if snapshot_interval > 0 and (num_epochs - epoch) % snapshot_interval == 1:
+                print('(Saving snapshot)')
+                self._create_model_snapshot(model)
 
         print('FINISH.')
+    
+    def _create_model_snapshot(self, model):
+        snapshot = pickle.loads(pickle.dumps(model.state_dict()))
+        self.model_snapshots.append(snapshot)
