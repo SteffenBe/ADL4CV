@@ -81,10 +81,25 @@ instructions = [
     "true wisdom comes from",
 ]
 
+modifications_shape = [
+    "make it a {shape}",
+    "change it to a {shape}",
+    "i would prefer a {shape}",
+]
+
+modifications_color = [
+    "make it {col}",
+    "change the color to {col}",
+    "i would prefer {col}",
+    "{col} would be better",
+    "try it in {col}",
+]
+
 
 def get_template_words() -> Set[str]:
     """Returns a set of all used words in the text templates, excluding placeholders."""
-    return set(word for tpl in instructions + description_templates
+    all_templates = instructions + description_templates + modifications_shape + modifications_color
+    return set(word for tpl in all_templates
                for word in tpl.split(" ")
                if not word.startswith("{"))
 
@@ -93,6 +108,20 @@ def apply_placeholders(template_str: str, **kwargs) -> str:
     for placeholder, value in kwargs.items():
         template_str = template_str.replace("{"+placeholder+"}", value)
     return template_str
+
+
+def generate_single_modification(*, new_shape: str = None, new_color: str = None) -> str:
+    if not new_shape and not new_color:
+        raise ValueError("need to specify either new_shape or new_color")
+    if new_shape and new_color:
+        raise ValueError("cannot specify both new_shape and new_color")
+
+    if new_shape:
+        template = np.random.choice(modifications_shape)
+        return apply_placeholders(template, shape=new_shape)
+    else:
+        template = np.random.choice(modifications_color)
+        return apply_placeholders(template, col=new_color)
 
 
 def generate_single_description(shape: str, fill_color: str, template: str = None) -> str:
@@ -107,6 +136,7 @@ def generate_single_description(shape: str, fill_color: str, template: str = Non
 _baked_description_templates = None
 _baked_description_weights = None
 
+
 def bake_descriptions():
     global _baked_description_templates, _baked_description_weights
     if _baked_description_templates is not None and _baked_description_weights is not None:
@@ -116,10 +146,11 @@ def bake_descriptions():
         d = apply_placeholders(tpl, instruction=instruction)
         baked_nums.setdefault(d, 0)
         baked_nums[d] += 1
-    
+
     _baked_description_templates = list(baked_nums.keys())
     _baked_description_weights = np.fromiter(baked_nums.values(), float)
     _baked_description_weights /= np.sum(_baked_description_weights)
+
 
 def generate_descriptions(n: int, shape: str, fill_color: str) -> List[str]:
     bake_descriptions()
@@ -127,14 +158,15 @@ def generate_descriptions(n: int, shape: str, fill_color: str) -> List[str]:
         raise ValueError("cannot generate more than %d unique descriptions" % len(
             _baked_description_templates))
 
-    chosen_templates = np.random.choice(_baked_description_templates, n, replace=False, p=_baked_description_weights)
+    chosen_templates = np.random.choice(
+        _baked_description_templates, n, replace=False, p=_baked_description_weights)
     return [generate_single_description(shape, fill_color, tpl) for tpl in chosen_templates]
 
 
 if __name__ == "__main__":
-    n = 10
-    shapes = ["square", "triangle"]
-    fill_colors = ["blue", "red"]
+    n = 2
+    shapes = ["square", "triangle", "star"]
+    fill_colors = ["blue", "red", "green", "cyan"]
 
     np.random.seed(42)
     print("Single:", generate_single_description("square", "blue"))
@@ -144,6 +176,15 @@ if __name__ == "__main__":
             print("----")
             for d in sorted(generate_descriptions(n, shape, fill_color)):
                 print(d)
-    
+
     print()
-    print("Total unique descriptions per configuration:", len(_baked_description_templates))
+    print("Total unique descriptions per configuration:",
+          len(_baked_description_templates))
+    print('\n----\n')
+
+    print('Modifications:')
+    for shape in shapes:
+        print(generate_single_modification(new_shape=shape))
+    print('----')
+    for color in fill_colors:
+        print(generate_single_modification(new_color=color))
