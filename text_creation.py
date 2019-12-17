@@ -151,6 +151,9 @@ def bake_descriptions():
     _baked_description_weights = np.fromiter(baked_nums.values(), float)
     _baked_description_weights /= np.sum(_baked_description_weights)
 
+def choose_baked_description_template():
+    bake_descriptions()
+    return np.random.choice(_baked_description_templates, p=_baked_description_weights)
 
 def generate_descriptions(n: int, shape: str, fill_color: str) -> List[str]:
     bake_descriptions()
