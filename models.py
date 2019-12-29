@@ -20,10 +20,10 @@ class TextEncoder(nn.Module):
     """The text encoder takes a sequence of word indices and outputs
   the joint sequence embedding (J)."""
 
-    def __init__(self, vocab_size, word_embedding_size, out_size):
+    def __init__(self, vocab_words, word_embedding_size, out_size):
         super().__init__()
-        self.word_embedding = nn.Embedding(vocab_size, word_embedding_size, padding_idx=0)
-        self.rnn = nn.LSTM(word_embedding_size, out_size, batch_first=True)
+        self.word_embedding, embedding_size = embedding_layer(vocab_words, embed_dim=word_embedding_size)
+        self.rnn = nn.LSTM(embedding_size, out_size, batch_first=True)
         self.final_linear = nn.Linear(out_size, out_size)
 
     def forward(self, x):
@@ -71,9 +71,9 @@ class ImageEncoder(nn.Module):
 
 
 class JointModel(nn.Module):
-    def __init__(self, vocab_size, word_embedding_size, image_size, joint_embedding_size):
+    def __init__(self, vocab_words, image_size, joint_embedding_size,  word_embedding_size=51):
         super().__init__()
-        self.text_enc = TextEncoder(vocab_size, word_embedding_size, joint_embedding_size)
+        self.text_enc = TextEncoder(vocab_words, word_embedding_size, joint_embedding_size)
         self.image_enc = ImageEncoder(image_size, image_size, 3, joint_embedding_size)
 
     def forward(self, x):
@@ -106,8 +106,8 @@ class JointModel_classification(nn.Module):  # Just to keep it in so we can also
         return self.dummy_classifier(x_image)
 
 
-def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt"):
-    embed_dim = 51
+def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed_dim=51):
+    #embed_dim = 51
     glove_dict = {}
     with open(path_to_glove, 'rb') as f:
         for l in f:
@@ -146,9 +146,9 @@ def create_emb_layer(weights_matrix, trainable=False):
 
     return emb_layer, num_embeddings, embedding_dim
 
-def embedding_layer(vocab_word_list, path_to_glove="glove.6B.50d.txt", trainable=False):
+def embedding_layer(vocab_word_list, path_to_glove="glove.6B.50d.txt", trainable=False, embed_dim=51):
 
-    weights_matrix = make_weights_matrix(vocab_word_list, path_to_glove)
+    weights_matrix = make_weights_matrix(vocab_word_list, path_to_glove, embed_dim=embed_dim)
 
     emb_layer, num_embeddings, embedding_dim = create_emb_layer(weights_matrix, trainable=trainable)
 
