@@ -20,9 +20,9 @@ class TextEncoder(nn.Module):
     """The text encoder takes a sequence of word indices and outputs
   the joint sequence embedding (J)."""
 
-    def __init__(self, vocab_words, word_embedding_size, out_size):
+    def __init__(self, vocab_words, word_embedding_size, out_size, path_to_glove="repo/glove.6B.50d.txt"):
         super().__init__()
-        self.word_embedding, embedding_size = embedding_layer(vocab_words, embed_dim=word_embedding_size)
+        self.word_embedding, embedding_size = embedding_layer(vocab_words, embed_dim=word_embedding_size, path_to_glove=path_to_glove)
         self.rnn = nn.LSTM(embedding_size, out_size, batch_first=True)
         self.final_linear = nn.Linear(out_size, out_size)
 
@@ -71,9 +71,9 @@ class ImageEncoder(nn.Module):
 
 
 class JointModel(nn.Module):
-    def __init__(self, vocab_words, image_size, joint_embedding_size,  word_embedding_size=51):
+    def __init__(self, vocab_words, image_size, joint_embedding_size,  word_embedding_size=51, path_to_glove="repo/glove.6B.50d.txt"):
         super().__init__()
-        self.text_enc = TextEncoder(vocab_words, word_embedding_size, joint_embedding_size)
+        self.text_enc = TextEncoder(vocab_words, word_embedding_size, joint_embedding_size, path_to_glove=path_to_glove)
         self.image_enc = ImageEncoder(image_size, image_size, 3, joint_embedding_size)
 
     def forward(self, x):
