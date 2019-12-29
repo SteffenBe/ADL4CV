@@ -140,7 +140,7 @@ def create_emb_layer(weights_matrix, trainable=False):
 
     num_embeddings, embedding_dim = weights_matrix.shape
     emb_layer = nn.Embedding(num_embeddings, embedding_dim)
-    emb_layer.load_state_dict({'weight': weights_matrix})
+    emb_layer.load_state_dict({'weight': torch.from_numpy(weights_matrix)})
     if not trainable:
         emb_layer.weight.requires_grad = False
 
