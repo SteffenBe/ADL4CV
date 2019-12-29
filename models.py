@@ -136,6 +136,24 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt"):
 
     return weights_matrix
 
+def create_emb_layer(weights_matrix, trainable=False):
+
+    num_embeddings, embedding_dim = weights_matrix.size()
+    emb_layer = nn.Embedding(num_embeddings, embedding_dim)
+    emb_layer.load_state_dict({'weight': weights_matrix})
+    if not trainable:
+        emb_layer.weight.requires_grad = False
+
+    return emb_layer, num_embeddings, embedding_dim
+
+def embedding_layer(vocab_word_list, path_to_glove="glove.6B.50d.txt", trainable=False):
+
+    weights_matrix = make_weights_matrix(vocab_word_list, path_to_glove)
+
+    emb_layer, num_embeddings, embedding_dim = create_emb_layer(weights_matrix, trainable=trainable)
+
+    return emb_layer, embedding_dim
+
 
 if __name__ == "__main__":
     example_vocabulary = [".", "test", "asdfasdfa2 fgb", "asdfasdireuireuirue", "OOV", "END"]
