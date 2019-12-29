@@ -138,7 +138,7 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed
 
 def create_emb_layer(weights_matrix, trainable=False):
 
-    num_embeddings, embedding_dim = weights_matrix.size()
+    num_embeddings, embedding_dim = weights_matrix.shape
     emb_layer = nn.Embedding(num_embeddings, embedding_dim)
     emb_layer.load_state_dict({'weight': weights_matrix})
     if not trainable:
