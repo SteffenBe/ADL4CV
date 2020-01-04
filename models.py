@@ -109,43 +109,34 @@ class JointModel_classification(nn.Module):  # Just to keep it in so we can also
 def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed_dim=51):
     #embed_dim = 51
     glove_dict = {}
-    skip = True
     with open(path_to_glove, 'rb') as f:
         for l in f:
-            # if skip == True:
-            #     skip = False
-            #     continue
-            print(".............")
-            print(l)
             line = l.decode().split()
-            print("XXXXXXXXXXXXXXXXXXX")
-            print(line)
-            # print(line)
-            # word = line[0]
-            # if word not in vocabulary:
-            #     continue
-            # vector = np.array(line[1:]).astype(np.float)
-            # glove_dict[word] = vector
+            word = line[0]
+            if word not in vocabulary:
+                continue
+            vector = np.array(line[1:]).astype(np.float)
+            glove_dict[word] = vector
 
     print([key for key, value in glove_dict.items()])
 
     matrix_len = len(vocabulary)
     weights_matrix = np.zeros((matrix_len, embed_dim))
     not_found_words = []
-    # found_words = vocabulary
+    found_words = vocabulary.copy()
     for i, word in enumerate(vocabulary):
         if i not in [0, matrix_len - 1, matrix_len - 2]:
             try:
                 weights_matrix[i, 0:embed_dim - 1] = glove_dict[word]
             except KeyError:
                 not_found_words.append(word)
-                # found_words.remove(word)
+                found_words.remove(word)
                 weights_matrix[i, 0:embed_dim - 1] = np.random.normal(scale=0.6, size=(embed_dim - 1,))
 
     weights_matrix[-2, -1] = 0.5
     weights_matrix[-1, -1] = 1
 
-    # print("The following words were found in glove data: %s" % found_words)
+    print("The following words were found in glove data: %s" % found_words)
     print("The following words were not found in glove data: %s" % not_found_words)
 
 
