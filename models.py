@@ -121,7 +121,7 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed
     matrix_len = len(vocabulary)
     weights_matrix = np.zeros((matrix_len, embed_dim))
     not_found_words = []
-    found_words = vocabulary.copy()
+    found_words = vocabulary
     for i, word in enumerate(vocabulary):
         if i not in [0, matrix_len - 1, matrix_len - 2]:
             try:
