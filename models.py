@@ -112,16 +112,20 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed
     skip = True
     with open(path_to_glove, 'rb') as f:
         for l in f:
-            if skip == True:
-                skip = False
-                continue
+            # if skip == True:
+            #     skip = False
+            #     continue
+            print(".............")
+            print(l)
             line = l.decode().split()
+            print("XXXXXXXXXXXXXXXXXXX")
             print(line)
-            word = line[0]
+            # print(line)
+            # word = line[0]
             # if word not in vocabulary:
             #     continue
-            vector = np.array(line[1:]).astype(np.float)
-            glove_dict[word] = vector
+            # vector = np.array(line[1:]).astype(np.float)
+            # glove_dict[word] = vector
 
     print([key for key, value in glove_dict.items()])
 
