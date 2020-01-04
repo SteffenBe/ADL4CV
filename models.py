@@ -118,7 +118,7 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed
             vector = np.array(line[1:]).astype(np.float)
             glove_dict[word] = vector
 
-    print([key for key, value in glove_dict.iteritems()])
+    print([key for key, value in glove_dict.items()])
 
     matrix_len = len(vocabulary)
     weights_matrix = np.zeros((matrix_len, embed_dim))
