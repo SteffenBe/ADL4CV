@@ -121,7 +121,7 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed
     matrix_len = len(vocabulary)
     weights_matrix = np.zeros((matrix_len, embed_dim))
     not_found_words = []
-    found_words = vocabulary
+    found_words = vocabulary.copy()
     for i, word in enumerate(vocabulary):
         if i not in [0, matrix_len - 1, matrix_len - 2]:
             try:
@@ -180,6 +180,8 @@ def check_glove(word_string, path_to_glove="glove.6B.50d.txt", glove_list=None):
 
 
 if __name__ == "__main__":
-    check_glove(word_string="draft")
+    test_vocab = [".", "a", "all", "and", "any"]
+    # make_weights_matrix(vocabulary=test_vocab)
+    # check_glove(word_string="draft")
     # example_vocabulary = [".", "test", "asdfasdfa2 fgb", "asdfasdireuireuirue", "OOV", "END"]
     # print(make_weights_matrix(vocabulary=example_vocabulary))
