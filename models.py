@@ -159,6 +159,27 @@ def embedding_layer(vocab_word_list, path_to_glove="glove.6B.50d.txt", trainable
     return emb_layer, embedding_dim
 
 
+def check_glove(word_string, path_to_glove="glove.6B.50d.txt", glove_list=None):
+
+    if glove_list is None:
+        glove_list = []
+        with open(path_to_glove, 'rb') as f:
+            for l in f:
+                line = l.decode().split()
+                word = line[0]
+                glove_list.append(word)
+
+    if word_string in glove_list:
+        print("Word: %s found in raw glove" % word_string)
+
+    glove_list_lower = [word.lower() for word in glove_list]
+
+    if word_string.lower() in glove_list_lower and word_string != word_string.lower():
+        print("Word: %s converted to %s and found in lower case glove list" % (word_string, word_string.lower()))
+
+
+
 if __name__ == "__main__":
-    example_vocabulary = [".", "test", "asdfasdfa2 fgb", "asdfasdireuireuirue", "OOV", "END"]
-    print(make_weights_matrix(vocabulary=example_vocabulary))
+    check_glove(word_string="draft")
+    # example_vocabulary = [".", "test", "asdfasdfa2 fgb", "asdfasdireuireuirue", "OOV", "END"]
+    # print(make_weights_matrix(vocabulary=example_vocabulary))
