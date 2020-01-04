@@ -112,6 +112,7 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed
     with open(path_to_glove, 'rb') as f:
         for l in f:
             line = l.decode().split()
+            print(line)
             word = line[0]
             # if word not in vocabulary:
             #     continue
