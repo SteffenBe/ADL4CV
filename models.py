@@ -109,8 +109,12 @@ class JointModel_classification(nn.Module):  # Just to keep it in so we can also
 def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed_dim=51):
     #embed_dim = 51
     glove_dict = {}
+    skip = True
     with open(path_to_glove, 'rb') as f:
         for l in f:
+            if skip = True:
+                skip = False
+                continue
             line = l.decode().split()
             print(line)
             word = line[0]
