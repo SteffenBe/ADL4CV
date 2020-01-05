@@ -7,6 +7,9 @@ import sys
 if 'google.colab' not in sys.modules:
     from text_creation import description_templates, instructions, modifications_shape, modifications_color
 
+shapes = ["square", "triangle", "star", "ellipse"]
+colors = ["red", "green", "blue", "purple"]
+
 
 def count_params(model):
     """Returns the total number of trainable parameters in a torch module."""
@@ -110,7 +113,7 @@ class JointModel_classification(nn.Module):  # Just to keep it in so we can also
         return self.dummy_classifier(x_image)
 
 
-def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed_dim=51):
+def make_weights_matrix(vocabulary=[], path_to_glove="glove.6B.50d.txt", embed_dim=51):
     # embed_dim = 51
     if path_to_glove.split(".")[-1] == "txt":
         glove_dict = {}
@@ -193,7 +196,7 @@ def check_glove(word_string, path_to_glove="glove.6B.50d.txt", glove_list=None):
 def make_relevant_glove_dict(vocabulary_words=[], path_to_glove="glove.6B.50d.txt", take_all=False):
 
     if not take_all and vocabulary_words == []:
-        all_strings = description_templates + instructions + modifications_shape + modifications_color
+        all_strings = description_templates + instructions + modifications_shape + modifications_color + shapes + colors
 
         vocabulary_words = []
         for text in all_strings:
@@ -218,7 +221,7 @@ def make_relevant_glove_dict(vocabulary_words=[], path_to_glove="glove.6B.50d.tx
     return glove_dict
 
 
-def save_relevant_glove_dict(vocabulary_words=None, save_glove_dict_as="relevant_glove_dict.pkl",
+def save_relevant_glove_dict(vocabulary_words=[], save_glove_dict_as="relevant_glove_dict.pkl",
                              path_to_glove="glove.6B.50d.txt"):
 
     glove_dict = make_relevant_glove_dict(vocabulary_words=vocabulary_words, path_to_glove=path_to_glove)
@@ -250,9 +253,9 @@ def load_obj(name):
 
 
 if __name__ == "__main__":
-    # save_relevant_glove_dict()
-    test_vocab = [".", "a", "all", "and", "any"]
-    a = make_weights_matrix(vocabulary=test_vocab, path_to_glove="relevant_glove_dict.pkl")
+    save_relevant_glove_dict()
+    # test_vocab = [".", "a", "all", "and", "any"]
+    # a = make_weights_matrix(vocabulary=test_vocab, path_to_glove="relevant_glove_dict.pkl")
     # print(a)
     # check_glove(word_string="draft")
     # example_vocabulary = [".", "test", "asdfasdfa2 fgb", "asdfasdireuireuirue", "OOV", "END"]
