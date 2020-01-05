@@ -3,7 +3,9 @@ from torch import nn
 from datetime import datetime
 import numpy as np
 import pickle
-from text_creation import description_templates, instructions, modifications_shape, modifications_color
+import sys
+if 'google.colab' not in sys.modules:
+    from text_creation import description_templates, instructions, modifications_shape, modifications_color
 
 
 def count_params(model):
@@ -251,7 +253,7 @@ if __name__ == "__main__":
     # save_relevant_glove_dict()
     test_vocab = [".", "a", "all", "and", "any"]
     a = make_weights_matrix(vocabulary=test_vocab, path_to_glove="relevant_glove_dict.pkl")
-    print(a)
+    # print(a)
     # check_glove(word_string="draft")
     # example_vocabulary = [".", "test", "asdfasdfa2 fgb", "asdfasdireuireuirue", "OOV", "END"]
     # print(make_weights_matrix(vocabulary=example_vocabulary))
