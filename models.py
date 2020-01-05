@@ -208,7 +208,8 @@ def make_relevant_glove_dict(vocabulary_words=None, path_to_glove="glove.6B.50d.
     return glove_dict
 
 
-def save_relevant_glove_dict(vocabulary_words=None, save_glove_dict_as="glove_dict", path_to_glove="glove.6B.50d.txt"):
+def save_relevant_glove_dict(vocabulary_words=None, save_glove_dict_as="relevant_glove_dict",
+                             path_to_glove="glove.6B.50d.txt"):
 
     glove_dict = make_relevant_glove_dict(vocabulary_words=vocabulary_words, path_to_glove=path_to_glove)
 
