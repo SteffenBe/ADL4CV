@@ -110,15 +110,22 @@ class JointModel_classification(nn.Module):  # Just to keep it in so we can also
 
 def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed_dim=51):
     # embed_dim = 51
-    glove_dict = {}
-    with open(path_to_glove, 'rb') as f:
-        for l in f:
-            line = l.decode().split()
-            word = line[0]
-            if word not in vocabulary:
-                continue
-            vector = np.array(line[1:]).astype(np.float)
-            glove_dict[word] = vector
+    if path_to_glove.split(".")[-1] == "txt":
+        glove_dict = {}
+        with open(path_to_glove, 'rb') as f:
+            for l in f:
+                line = l.decode().split()
+                word = line[0]
+                if word not in vocabulary:
+                    continue
+                vector = np.array(line[1:]).astype(np.float)
+                glove_dict[word] = vector
+
+    elif path_to_glove.split(".")[-1] in ["pkl", "pickle", "pck", "pcl"]:
+        glove_dict = load_obj(path_to_glove)
+
+    else:
+        raise ValueError("File %s could not be loaded as glove data" % path_to_glove)
 
     matrix_len = len(vocabulary)
     weights_matrix = np.zeros((matrix_len, embed_dim))
@@ -181,9 +188,9 @@ def check_glove(word_string, path_to_glove="glove.6B.50d.txt", glove_list=None):
         print("Word: %s converted to %s and found in lower case glove list" % (word_string, word_string.lower()))
 
 
-def make_relevant_glove_dict(vocabulary_words=None, path_to_glove="glove.6B.50d.txt"):
+def make_relevant_glove_dict(vocabulary_words=[], path_to_glove="glove.6B.50d.txt", take_all=False):
 
-    if vocabulary_words is None:
+    if not take_all and vocabulary_words == []:
         all_strings = description_templates + instructions + modifications_shape + modifications_color
 
         vocabulary_words = []
@@ -194,13 +201,14 @@ def make_relevant_glove_dict(vocabulary_words=None, path_to_glove="glove.6B.50d.
                     continue
                 if word not in vocabulary_words:
                     vocabulary_words.append(word)
-    print("%s unique used words found." % len(vocabulary_words))
+        print("%s unique used words found." % len(vocabulary_words))
+
     glove_dict = {}
     with open(path_to_glove, 'rb') as f:
         for l in f:
             line = l.decode().split()
             word = line[0]
-            if word not in vocabulary_words:
+            if not take_all and word not in vocabulary_words:
                 continue
             vector = np.array(line[1:]).astype(np.float)
             glove_dict[word] = vector
@@ -208,7 +216,7 @@ def make_relevant_glove_dict(vocabulary_words=None, path_to_glove="glove.6B.50d.
     return glove_dict
 
 
-def save_relevant_glove_dict(vocabulary_words=None, save_glove_dict_as="relevant_glove_dict",
+def save_relevant_glove_dict(vocabulary_words=None, save_glove_dict_as="relevant_glove_dict.pkl",
                              path_to_glove="glove.6B.50d.txt"):
 
     glove_dict = make_relevant_glove_dict(vocabulary_words=vocabulary_words, path_to_glove=path_to_glove)
@@ -217,20 +225,33 @@ def save_relevant_glove_dict(vocabulary_words=None, save_glove_dict_as="relevant
     save_obj(glove_dict, save_glove_dict_as)
 
 
+def save_all_glove_dict(save_glove_dict_as="all_glove_dict.pkl", path_to_glove="glove.6B.50d.txt"):
+
+    glove_dict = make_relevant_glove_dict(path_to_glove=path_to_glove, take_all=True)
+
+    print("Saving glove dictionary with %s entries as '%s'" % (len(glove_dict), save_glove_dict_as))
+    save_obj(glove_dict, save_glove_dict_as)
+
+
 def save_obj(obj, name):
-    with open(name + '.pkl', 'wb') as f:
+    if name.split(".")[-1] not in ["pkl", "pickle", "pck", "pcl"]:
+        name = name + '.pkl'
+    with open(name, 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 
 def load_obj(name):
-    with open(name + '.pkl', 'rb') as f:
+    if name.split(".")[-1] not in ["pkl", "pickle", "pck", "pcl"]:
+        name = name + '.pkl'
+    with open(name, 'rb') as f:
         return pickle.load(f)
 
 
 if __name__ == "__main__":
-    save_relevant_glove_dict()
-    # test_vocab = [".", "a", "all", "and", "any"]
-    # make_weights_matrix(vocabulary=test_vocab)
+    # save_relevant_glove_dict()
+    test_vocab = [".", "a", "all", "and", "any"]
+    a = make_weights_matrix(vocabulary=test_vocab, path_to_glove="relevant_glove_dict.pkl")
+    print(a)
     # check_glove(word_string="draft")
     # example_vocabulary = [".", "test", "asdfasdfa2 fgb", "asdfasdireuireuirue", "OOV", "END"]
     # print(make_weights_matrix(vocabulary=example_vocabulary))
