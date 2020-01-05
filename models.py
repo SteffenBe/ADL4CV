@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from datetime import datetime
 import numpy as np
+import pickle
+from text_creation import description_templates, instructions, modifications_shape, modifications_color
 
 
 def count_params(model):
@@ -118,8 +120,6 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed
             vector = np.array(line[1:]).astype(np.float)
             glove_dict[word] = vector
 
-    # print([key for key, value in glove_dict.items()])
-
     matrix_len = len(vocabulary)
     weights_matrix = np.zeros((matrix_len, embed_dim))
     not_found_words = []
@@ -139,8 +139,8 @@ def make_weights_matrix(vocabulary=None, path_to_glove="glove.6B.50d.txt", embed
     print("The following words were found in glove data: %s" % found_words)
     print("The following words were not found in glove data: %s" % not_found_words)
 
-
     return weights_matrix
+
 
 def create_emb_layer(weights_matrix, trainable=False):
 
@@ -151,6 +151,7 @@ def create_emb_layer(weights_matrix, trainable=False):
         emb_layer.weight.requires_grad = False
 
     return emb_layer, num_embeddings, embedding_dim
+
 
 def embedding_layer(vocab_word_list, path_to_glove="glove.6B.50d.txt", trainable=False, embed_dim=51):
 
@@ -180,10 +181,55 @@ def check_glove(word_string, path_to_glove="glove.6B.50d.txt", glove_list=None):
         print("Word: %s converted to %s and found in lower case glove list" % (word_string, word_string.lower()))
 
 
+def make_relevant_glove_dict(vocabulary_words=None, path_to_glove="glove.6B.50d.txt"):
+
+    if vocabulary_words is None:
+        all_strings = description_templates + instructions + modifications_shape + modifications_color
+
+        vocabulary_words = []
+        for text in all_strings:
+            words = text.split(" ")
+            for word in words:
+                if word[0] == "{" and word[-1] == "}":
+                    continue
+                if word not in vocabulary_words:
+                    vocabulary_words.append(word)
+    print("%s unique used words found." % len(vocabulary_words))
+    glove_dict = {}
+    with open(path_to_glove, 'rb') as f:
+        for l in f:
+            line = l.decode().split()
+            word = line[0]
+            if word not in vocabulary_words:
+                continue
+            vector = np.array(line[1:]).astype(np.float)
+            glove_dict[word] = vector
+
+    return glove_dict
+
+
+def save_relevant_glove_dict(vocabulary_words=None, save_glove_dict_as="glove_dict", path_to_glove="glove.6B.50d.txt"):
+
+    glove_dict = make_relevant_glove_dict(vocabulary_words=vocabulary_words, path_to_glove=path_to_glove)
+
+    print("Saving glove dictionary with %s entries as '%s.pkl'" % (len(glove_dict), save_glove_dict_as))
+    save_obj(glove_dict, save_glove_dict_as)
+
+
+def save_obj(obj, name):
+    with open(name + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+
+def load_obj(name):
+    with open(name + '.pkl', 'rb') as f:
+        return pickle.load(f)
+
 
 if __name__ == "__main__":
-    test_vocab = [".", "a", "all", "and", "any"]
-    make_weights_matrix(vocabulary=test_vocab)
+    save_relevant_glove_dict()
+    # test_vocab = [".", "a", "all", "and", "any"]
+    # make_weights_matrix(vocabulary=test_vocab)
     # check_glove(word_string="draft")
     # example_vocabulary = [".", "test", "asdfasdfa2 fgb", "asdfasdireuireuirue", "OOV", "END"]
     # print(make_weights_matrix(vocabulary=example_vocabulary))
