@@ -23,7 +23,7 @@ class triplet_loss(torch.nn.Module):
 
         # Calculate distances and loss intra-modality for image only
         dist_pos_img = (image_anchor - image_positive).pow(2).sum(1)
-        dist_neg_img = (image_anchor - image_positive).pow(2).sum(1)
+        dist_neg_img = (image_anchor - image_negative).pow(2).sum(1)
         loss2 = torch.nn.functional.relu(dist_pos_img - dist_neg_img + self.margin)
 
         # Calculate distances and loss with different modalities,
@@ -65,7 +65,7 @@ class triplet_loss_original(torch.nn.Module):
 
         # Calculate distances and loss intra-modality for image only
         dist_pos_img = (image_anchor - image_positive).pow(2).sum(1)
-        dist_neg_img = (image_anchor - image_positive).pow(2).sum(1)
+        dist_neg_img = (image_anchor - image_negative).pow(2).sum(1)
         loss2 = torch.nn.functional.relu(dist_pos_img - dist_neg_img + self.margin)
 
         # Calculate distances and loss with different modalities,
