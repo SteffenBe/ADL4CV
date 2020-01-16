@@ -45,27 +45,34 @@ class TextEncoder(nn.Module):
 class ImageEncoder(nn.Module):
     """The image encoder takes an input image and outputs the joint image embedding (J).
   
-  Input shape: (N, in_width, in_height, in_channels)
+  Input shape: (N, in_resolution, in_resolution, in_channels)
   Output shape: (N, out_size)
   """
 
-    def __init__(self, in_width, in_height, in_channels, out_size):
+    def __init__(self, in_resolution, in_channels, conv_layers, out_size):
         super().__init__()
-        pooling_factor = 8  # 2**num_pool_layers
-        num_last_conv_channels = 64
-        num_linear_in = num_last_conv_channels \
-                        * in_width // pooling_factor \
-                        * in_height // pooling_factor
-        self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, 16, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(32, num_last_conv_channels, 3, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
+        
+        self.cnn = nn.Sequential()
+
+        pooling_factor = 1
+        all_channels = [in_channels] + conv_layers
+        all_channel_pairs = zip(all_channels[:-1], all_channels[1:])
+        for i, (c_in, c_out) in enumerate(all_channel_pairs):
+            self.cnn.add_module(name="conv{0}".format(i),
+                    module=nn.Conv2d(c_in, c_out, 3, padding=1))
+            self.cnn.add_module(name="act{0}".format(i),
+                    module=nn.ReLU())
+            # Add max pooling after every other CONV layer.
+            #if i > 0 and i % 2 == 1:
+            if True:
+                pooling_factor *= 2
+                self.cnn.add_module(name="pool{0}".format(i),
+                        module=nn.MaxPool2d(2))
+        
+        num_linear_in = all_channels[-1] \
+                        * in_resolution // pooling_factor \
+                        * in_resolution // pooling_factor
+        self.linear = nn.Sequential(
             nn.Flatten(),
             nn.Linear(num_linear_in, out_size)
         )
@@ -73,15 +80,18 @@ class ImageEncoder(nn.Module):
     def forward(self, x):
         # change from (N, W, H, C) to (N, C, W, H)
         x = x.permute(0, 3, 1, 2)
-        x = self.encoder(x)
+        x = self.cnn(x)
+        x = self.linear(x)
         return x
 
 
 class JointModel(nn.Module):
-    def __init__(self, vocab_words, image_size, joint_embedding_size,  word_embedding_size=51, path_to_glove="repo/glove.6B.50d.txt"):
+    def __init__(self, vocab_words, image_size, joint_embedding_size,
+            word_embedding_size=51, path_to_glove="repo/glove.6B.50d.txt",
+            conv_layers=[32, 32, 32, 64, 64]):
         super().__init__()
         self.text_enc = TextEncoder(vocab_words, word_embedding_size, joint_embedding_size, path_to_glove=path_to_glove)
-        self.image_enc = ImageEncoder(image_size, image_size, 3, joint_embedding_size)
+        self.image_enc = ImageEncoder(image_size, 3, conv_layers, joint_embedding_size)
 
     def forward(self, x):
         x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative = x
@@ -93,24 +103,6 @@ class JointModel(nn.Module):
         x_image_negative = self.image_enc(x_image_negative)
 
         return x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative
-
-
-class JointModel_classification(nn.Module):  # Just to keep it in so we can also keep the singular network testing
-    def __init__(self, vocab_size, word_embedding_size, image_size, joint_embedding_size):
-        super().__init__()
-        self.text_enc = TextEncoder(vocab_size, word_embedding_size, joint_embedding_size)
-        self.image_enc = ImageEncoder(64, 64, 3, joint_embedding_size)
-        # Add a FCN at the end of the encoder as a placeholder classifier.
-        self.dummy_classifier = nn.Sequential(
-            nn.Linear(joint_embedding_size, 4),
-            nn.Softmax(dim=1)
-        )
-
-    def forward(self, x):
-        x_text, x_image = x
-        x_text = self.text_enc(x_text)
-        x_image = self.image_enc(x_image)
-        return self.dummy_classifier(x_image)
 
 
 def make_weights_matrix(vocabulary=[], path_to_glove="glove.6B.50d.txt", embed_dim=51):
