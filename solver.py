@@ -5,6 +5,7 @@ import pickle
 import torch
 from torch.autograd import Variable
 from sklearn.neighbors import KNeighborsClassifier
+from timeit import default_timer as timer
 
 # From Introduction to Deep Learning exercise templates.
 # The solver is currently specialized for classification tasks.
@@ -151,6 +152,7 @@ class Solver(object):
         print('START TRAIN FOR %d ITERATIONS.' % (iter_per_epoch * num_epochs))
 
         for epoch in range(num_epochs):
+            last_start_time = timer()
             # TRAINING
             model.train()
             for i, batch in enumerate(train_loader, 1):
@@ -171,20 +173,25 @@ class Solver(object):
 
                 self.train_loss_history.append(loss.detach().cpu().numpy())
                 if log_nth and i % log_nth == 0:
+                    now = timer()
+                    time_elapsed = now - last_start_time
+                    iter_per_second = log_nth / time_elapsed
+                    last_start_time = now
+
                     last_log_nth_losses = self.train_loss_history[-log_nth:]
                     train_loss = np.mean(last_log_nth_losses)
-                    print('[Iteration %d/%d] TRAIN loss: %.3f' % \
+                    print('[Iteration %d/%d] TRAIN loss: %.3f (+%.0f s, %.1f iter/s)' % \
                         (i + epoch * iter_per_epoch,
                          iter_per_epoch * num_epochs,
-                         train_loss))
+                         train_loss,
+                         time_elapsed, iter_per_second))
 
             text_accuracy, image_accuracy, overall_accuracy = knn_accuracy(x_text_anchor, x_image_anchor, targets)
             self.train_acc_history.append(overall_accuracy)
-            if log_nth:
-                print('[Epoch %d/%d] TRAIN acc/loss: %.3f/%.3f; Text only: %s; Image only: %s' % (epoch + 1,
-                                                                   num_epochs,
-                                                                   overall_accuracy,
-                                                                   np.mean(self.train_loss_history[-iter_per_epoch:]), text_accuracy, image_accuracy))
+            print('[Epoch %d/%d] TRAIN acc/loss: %.3f/%.3f; Text only: %s; Image only: %s' % (
+                        epoch + 1, num_epochs,
+                        overall_accuracy, np.mean(self.train_loss_history[-iter_per_epoch:]),
+                        text_accuracy, image_accuracy))
 
             # VALIDATION
             val_losses = []
@@ -207,11 +214,10 @@ class Solver(object):
             val_acc, val_loss = np.mean(val_scores), np.mean(val_losses)
             self.val_acc_history.append(val_acc)
             self.val_loss_history.append(val_loss)
-            if log_nth:
-                print('[Epoch %d/%d] VAL   acc/loss: %.3f/%.3f; Text only: %s; Image only: %s' % (epoch + 1,
-                                                                   num_epochs,
-                                                                   val_acc,
-                                                                   val_loss, text_accuracy, image_accuracy))
+            print('[Epoch %d/%d] VAL   acc/loss: %.3f/%.3f; Text only: %s; Image only: %s' % (
+                        epoch + 1, num_epochs,
+                        val_acc, val_loss,
+                        text_accuracy, image_accuracy))
             
             if snapshot_interval > 0 and (num_epochs - epoch) % snapshot_interval == 1:
                 print('(Saving snapshot)')
