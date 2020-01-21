@@ -27,12 +27,15 @@ class TextEncoder(nn.Module):
     """The text encoder takes a sequence of word indices and outputs
   the joint sequence embedding (J)."""
 
-    def __init__(self, vocab_words, word_embedding_size, lstm_size, out_size, path_to_glove="repo/glove.6B.50d.txt"):
+    def __init__(self, vocab_words, word_embedding_size, lstm_size, out_size, path_to_glove="repo/glove.6B.50d.txt", train_word_embeddings=True):
         super().__init__()
         if path_to_glove:
-            self.word_embedding = embedding_layer(vocab_words, embed_dim=word_embedding_size, path_to_glove=path_to_glove)
+            self.word_embedding = embedding_layer(vocab_words, embed_dim=word_embedding_size, path_to_glove=path_to_glove, trainable=train_word_embeddings)
         else:
             self.word_embedding = nn.Embedding(len(vocab_words), word_embedding_size, padding_idx=0)
+            if not train_word_embeddings:
+                print("WARNING: Not using pretrained embeddings, but train_word_embeddings is set to False! Will be limited by random fixed embeddings ...")
+                self.word_embedding.weight.requires_grad = False
         self.rnn = nn.LSTM(word_embedding_size, lstm_size, batch_first=True)
         self.final_linear = nn.Linear(lstm_size, out_size)
 
@@ -90,11 +93,11 @@ class ImageEncoder(nn.Module):
 
 class JointModel(nn.Module):
     def __init__(self, vocab_words, image_size, joint_embedding_size,
-            word_embedding_size=51, path_to_glove="repo/glove.6B.50d.txt",
+            word_embedding_size=51, path_to_glove="repo/glove.6B.50d.txt", train_word_embeddings=True,
             lstm_size=64,
             conv_layers=[32, 32, 32, 64, 64]):
         super().__init__()
-        self.text_enc = TextEncoder(vocab_words, word_embedding_size, lstm_size, joint_embedding_size, path_to_glove=path_to_glove)
+        self.text_enc = TextEncoder(vocab_words, word_embedding_size, lstm_size, joint_embedding_size, path_to_glove, train_word_embeddings)
         self.image_enc = ImageEncoder(image_size, 3, conv_layers, joint_embedding_size)
 
     def forward(self, x):
