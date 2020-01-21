@@ -74,8 +74,7 @@ class ImageEncoder(nn.Module):
             #if i > 0 and i % 2 == 1:
             if True:
                 pooling_factor *= 2
-                self.cnn.add_module(name="pool{0}".format(i),
-                        module=nn.MaxPool2d(2))
+                self.cnn.add_module(name="pool{0}".format(i), module=nn.MaxPool2d(2))
         
         num_linear_in = all_channels[-1] \
                         * in_resolution // pooling_factor \

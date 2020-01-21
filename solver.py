@@ -47,7 +47,8 @@ class triplet_loss(torch.nn.Module):
         loss7 = torch.nn.functional.relu(dist_pos_img_text - dist_neg_img + self.margin)
         loss8 = torch.nn.functional.relu(dist_pos_img - dist_neg_img_text + self.margin)
 
-        losses = loss1 + loss2 + loss3 + loss4 + loss5 + loss6 + loss7 + loss8
+        # Sum losses, but weight intra-modality ones higher for more stable initial training phase.
+        losses = loss1 + loss2 + 0.1 * (loss3 + loss4 + loss5 + loss6 + loss7 + loss8)
 
         return losses.mean() if average else losses.sum()
 
@@ -180,11 +181,11 @@ class Solver(object):
 
                     last_log_nth_losses = self.train_loss_history[-log_nth:]
                     train_loss = np.mean(last_log_nth_losses)
-                    print('[Iteration %d/%d] TRAIN loss: %.3f (+%.0f s, %.1f iter/s)' % \
+                    print('[Iteration %d/%d] TRAIN loss: %.3f (%.1f iter/s, %.1f samples/s)' % \
                         (i + epoch * iter_per_epoch,
                          iter_per_epoch * num_epochs,
                          train_loss,
-                         time_elapsed, iter_per_second))
+                         iter_per_second, iter_per_second * batch_size))
 
             text_accuracy, image_accuracy, overall_accuracy = knn_accuracy(x_text_anchor, x_image_anchor, targets)
             self.train_acc_history.append(overall_accuracy)
