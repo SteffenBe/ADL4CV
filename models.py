@@ -31,7 +31,7 @@ class TextEncoder(nn.Module):
         super().__init__()
         self.word_embedding, embedding_size = embedding_layer(vocab_words, embed_dim=word_embedding_size, path_to_glove=path_to_glove)
         self.rnn = nn.LSTM(embedding_size, lstm_size, batch_first=True)
-        self.final_linear = nn.Linear(out_size, out_size)
+        self.final_linear = nn.Linear(lstm_size, out_size)
 
     def forward(self, x):
         x = self.word_embedding(x)
