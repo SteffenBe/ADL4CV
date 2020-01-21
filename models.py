@@ -55,7 +55,7 @@ class ImageEncoder(nn.Module):
   Output shape: (N, out_size)
   """
 
-    def __init__(self, in_resolution, in_channels, conv_layers, out_size):
+    def __init__(self, in_resolution, in_channels, conv_layers, out_size, use_batch_norm=True, dropout=0.):
         super().__init__()
         
         self.cnn = nn.Sequential()
@@ -64,10 +64,12 @@ class ImageEncoder(nn.Module):
         all_channels = [in_channels] + conv_layers
         all_channel_pairs = zip(all_channels[:-1], all_channels[1:])
         for i, (c_in, c_out) in enumerate(all_channel_pairs):
-            self.cnn.add_module(name="conv{0}".format(i),
-                    module=nn.Conv2d(c_in, c_out, 3, padding=1))
-            self.cnn.add_module(name="act{0}".format(i),
-                    module=nn.ReLU())
+            self.cnn.add_module(name="conv{0}".format(i), module=nn.Conv2d(c_in, c_out, 3, padding=1))
+            if use_batch_norm:
+                self.cnn.add_module(name="bno{0}".format(i), module=nn.BatchNorm2d(c_out))
+            if dropout > 0:
+                self.cnn.add_module(name="drp{0}".format(i), module=nn.Dropout2d(p=dropout))
+            self.cnn.add_module(name="actv{0}".format(i), module=nn.ReLU())
             # Add max pooling after every other CONV layer.
             #if i > 0 and i % 2 == 1:
             if True:
@@ -95,10 +97,10 @@ class JointModel(nn.Module):
     def __init__(self, vocab_words, image_size, joint_embedding_size,
             word_embedding_size=51, path_to_glove="repo/glove.6B.50d.txt", train_word_embeddings=True,
             lstm_size=64,
-            conv_layers=[32, 32, 32, 64, 64]):
+            conv_layers=[32, 32, 32, 64, 64], use_batch_norm=True, image_dropout=0.):
         super().__init__()
         self.text_enc = TextEncoder(vocab_words, word_embedding_size, lstm_size, joint_embedding_size, path_to_glove, train_word_embeddings)
-        self.image_enc = ImageEncoder(image_size, 3, conv_layers, joint_embedding_size)
+        self.image_enc = ImageEncoder(image_size, 3, conv_layers, joint_embedding_size, use_batch_norm, image_dropout)
 
     def forward(self, x):
         x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative = x

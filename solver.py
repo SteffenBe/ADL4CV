@@ -148,7 +148,7 @@ class Solver(object):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model.to(device)
 
-        print('START TRAIN.')
+        print('START TRAIN FOR %d ITERATIONS.' % (iter_per_epoch * num_epochs))
 
         for epoch in range(num_epochs):
             # TRAINING
