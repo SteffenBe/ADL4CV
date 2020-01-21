@@ -29,8 +29,11 @@ class TextEncoder(nn.Module):
 
     def __init__(self, vocab_words, word_embedding_size, lstm_size, out_size, path_to_glove="repo/glove.6B.50d.txt"):
         super().__init__()
-        self.word_embedding, embedding_size = embedding_layer(vocab_words, embed_dim=word_embedding_size, path_to_glove=path_to_glove)
-        self.rnn = nn.LSTM(embedding_size, lstm_size, batch_first=True)
+        if path_to_glove:
+            self.word_embedding = embedding_layer(vocab_words, embed_dim=word_embedding_size, path_to_glove=path_to_glove)
+        else:
+            self.word_embedding = nn.Embedding(len(vocab_words), word_embedding_size, padding_idx=0)
+        self.rnn = nn.LSTM(word_embedding_size, lstm_size, batch_first=True)
         self.final_linear = nn.Linear(lstm_size, out_size)
 
     def forward(self, x):
@@ -155,16 +158,16 @@ def create_emb_layer(weights_matrix, trainable=False):
     if not trainable:
         emb_layer.weight.requires_grad = False
 
-    return emb_layer, num_embeddings, embedding_dim
+    return emb_layer, num_embeddings
 
 
 def embedding_layer(vocab_word_list, path_to_glove="glove.6B.50d.txt", trainable=False, embed_dim=51):
 
     weights_matrix = make_weights_matrix(vocab_word_list, path_to_glove, embed_dim=embed_dim)
 
-    emb_layer, num_embeddings, embedding_dim = create_emb_layer(weights_matrix, trainable=trainable)
+    emb_layer, num_embeddings = create_emb_layer(weights_matrix, trainable=trainable)
 
-    return emb_layer, embedding_dim
+    return emb_layer
 
 
 def check_glove(word_string, path_to_glove="glove.6B.50d.txt", glove_list=None):
