@@ -3,6 +3,7 @@ import numpy as np
 import pickle
 
 import torch
+from torchvision.utils import save_image
 from timeit import default_timer as timer
 
 class SolverCGAN(object):
@@ -14,7 +15,8 @@ class SolverCGAN(object):
                          "weight_decay": 0.0}
 
     def __init__(self, latent_dim, optim=torch.optim.Adam, optim_args_generator={}, optim_args_discriminator={},
-                 loss_func=torch.nn.BCELoss()):
+                 loss_func=torch.nn.BCELoss(),
+                 condition_input_for_save=None, z_samples=5):
         optim_args_generator_merged = self.default_adam_args.copy()
         optim_args_generator_merged.update(optim_args_generator)
         self.optim_args_generator = optim_args_generator_merged
@@ -25,10 +27,16 @@ class SolverCGAN(object):
         self.optim = optim
         self.loss_func = loss_func
 
-        self.latent_dim = latent_dim
-        self.z_for_save = torch.randn(25, self.latent_dim)
-        self.condition_for_save = None  # will be filled with values from first batch
         self.instance_id = datetime.utcnow().strftime('%H-%M')
+        self.latent_dim = latent_dim
+        # For saving the debug image during training.
+        if type(condition_input_for_save) == type(None):
+            self.condition_input_for_save = None  # will be filled with values from first batch
+            self.z_for_save = torch.randn(z_samples, self.latent_dim)
+        else:
+            self.condition_input_for_save = condition_input_for_save
+            self.z_for_save = torch.randn(z_samples, self.latent_dim)
+        
         self._reset_histories()
 
     def _reset_histories(self):
@@ -54,7 +62,6 @@ class SolverCGAN(object):
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         generator.to(device)
         discriminator.to(device)
-        self.z_for_save = self.z_for_save.to(device)
 
         iter_per_epoch = len(dataloader)
         print('START TRAIN FOR %d ITERATIONS.' % (iter_per_epoch * num_epochs))
@@ -64,7 +71,7 @@ class SolverCGAN(object):
             # TRAINING
             generator.train()
             discriminator.train()
-
+            
             # Keep generated images around for the multiple steps of training of the discriminator.
             fake_imgs = None
 
@@ -73,11 +80,10 @@ class SolverCGAN(object):
                 batch = tuple(tensor.to(device) for tensor in batch)
                 batch_size = batch[0].size(0)
                 
-                condition_inputs, real_imgs = batch
-                condition_inputs.fill_(0)
+                condition_inputs, real_imgs, _ = batch
 
-                if type(self.condition_for_save) == type(None):
-                    self.condition_for_save = condition_inputs[:25]
+                if type(self.condition_input_for_save) == type(None):
+                    self.condition_input_for_save = condition_inputs[:5]
 
                 # Adversarial ground truths. Set target for real images to 0.9 instead of 1
                 # to apply "label smoothing" (prevent overconfidence of discriminator).
@@ -119,7 +125,7 @@ class SolverCGAN(object):
                 self.discriminator_loss_history.append(d_loss.item())
                 if batch_index % save_nth_batch == 0:
                     print("(Saving samples after %d total iterations.)" % batch_index)
-                    self._save_samples(generator, batch_index)
+                    self._save_samples(generator, batch_index, device)
 
                 if log_nth and batch_index % log_nth == 0:
                     now = timer()
@@ -143,8 +149,16 @@ class SolverCGAN(object):
         generator.eval()
         discriminator.eval()
 
-    def _save_samples(self, generator, n_iterations):
-        gen_input = torch.cat([self.z_for_save, self.condition_for_save], 1)
-        gen_imgs = generator(gen_input).detach().cpu()
+    def _save_samples(self, generator, n_iterations, device):
+        num_conditions = self.condition_input_for_save.shape[0]
+        num_z = self.z_for_save.shape[0]
+
+        gen_input = torch.cat([torch.repeat_interleave(self.z_for_save, repeats=num_conditions, dim=0),
+                                self.condition_input_for_save.repeat(num_z, 1)], 1)
+
+        generator.eval()
+        gen_imgs = generator(gen_input.to(device)).detach().cpu()
+        generator.train()
+
         fname = "images/%s--%05d.png" % (self.instance_id, n_iterations)
-        save_image(gen_imgs.permute(0, 3, 1, 2), fname, nrow=5, normalize=True)
+        save_image(gen_imgs.permute(0, 3, 1, 2), fname, nrow=num_conditions, normalize=True)
