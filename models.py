@@ -113,6 +113,45 @@ class JointModel(nn.Module):
         return x_text_positive, x_image_positive, x_text_anchor, x_image_anchor, x_text_negative, x_image_negative
 
 
+class SemanticModifier(nn.Module):
+    """The modifier takes a joint embedding vector (J) and a modification string
+    and outputs a new embedding vector with the described change applied.
+
+    Inputs:
+        in_embedding: (N, joint_embedding_size)
+        in_text_sequence: (N, SEQ)
+    Output shape:
+        (N, joint_embedding_size)
+    """
+
+    def __init__(self, joint_embedding_size, vocab_size, word_embedding_size, rnn_hidden_size, linear_hidden_size):
+        super().__init__()
+        self.word_embedding = nn.Embedding(vocab_size, word_embedding_size, padding_idx=0)
+        self.rnn = nn.LSTM(word_embedding_size, rnn_hidden_size, batch_first=True)
+
+        concatenated_size = rnn_hidden_size + joint_embedding_size
+        self.mlp = nn.Sequential(
+            nn.Linear(concatenated_size, linear_hidden_size),
+            nn.ReLU(),
+            nn.Linear(linear_hidden_size, joint_embedding_size)
+        )
+    
+    def forward(self, x_embedding, x_text_sequence):
+        x = self.word_embedding(x_text_sequence)
+        x, _ = self.rnn(x)
+        # Use last output of the sequence (final embedding).
+        x = x[:, -1, :]
+        x = torch.cat((x, x_embedding), dim=1)
+        x = self.mlp(x)
+        return x
+
+
+
+
+##############################
+#####  Stuff for GloVe  ######
+##############################
+
 def make_weights_matrix(vocabulary=[], path_to_glove="glove.6B.50d.txt", embed_dim=51):
     # embed_dim = 51
     if path_to_glove.split(".")[-1] == "txt":
