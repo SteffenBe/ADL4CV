@@ -213,3 +213,72 @@ def make_modifier_dataset(n_samples, vocab, text_encoder, random_seed=None, blac
   in_embeddings_tensor = text_encoder(sequences_in.to(device)).detach().cpu()
   out_embeddings_tensor = text_encoder(sequences_out.to(device)).detach().cpu()
   return torch.utils.data.TensorDataset(in_embeddings_tensor, sequences_mod, out_embeddings_tensor)
+
+
+def get_dummy_class(shape, color):
+
+    return all_dummy_classes.index((shape, color))
+
+
+def make_test_dataset(n_samples, vocab, text_encoder, random_seed=None, blacklist=[]):
+  if random_seed is not None:
+    np.random.seed(random_seed)
+  unpadded_sequences_in = [None] * n_samples
+  unpadded_sequences_mod = [None] * n_samples
+  unpadded_sequences_out = [None] * n_samples
+
+
+
+  background = image_creation.make_default_image('white')
+  image_resolution= 64
+
+  image_in = torch.empty(n_samples, image_resolution, image_resolution, 3, dtype=torch.float32)
+  label_in = []
+  image_out = torch.empty(n_samples, image_resolution, image_resolution, 3, dtype=torch.float32)
+  label_out = []
+  
+  for i in tqdm(range(n_samples)):
+    shape, fill_color = choose_attrs(blacklist)
+    desc_tpl = text_creation.choose_baked_description_template()
+    # Generate sample for in_embedding.
+    desc_in = text_creation.generate_single_description(shape, fill_color, desc_tpl)
+    unpadded_sequences_in[i] = torch.tensor(vocab.str_to_seq(desc_in), dtype=torch.long)
+
+    img_in = image_creation.make_image(background, shape, fill_color, (image_resolution, image_resolution), super_sampling=2)
+    img_in = torch.tensor(img_in, dtype=torch.float32)
+    image_in[i] = img_in
+
+    label_in.append(get_dummy_class(shape, fill_color))
+
+    # Pick either a change in shape or color.
+    modifications = {}
+    if np.random.randint(2) == 0:
+      shape = np.random.choice(list(set(all_shapes) - set([shape])))
+      modifications['new_shape'] = shape
+    else:
+      fill_color = np.random.choice(list(set(all_fill_colors) - set([fill_color])))
+      modifications['new_color'] = fill_color
+
+    # Generate sample for out_embedding.
+    desc_out = text_creation.generate_single_description(shape, fill_color, desc_tpl)
+    unpadded_sequences_out[i] = torch.tensor(vocab.str_to_seq(desc_out), dtype=torch.long)
+    
+    # Generate modification text sample.
+    mod_str = text_creation.generate_single_modification(**modifications)
+    unpadded_sequences_mod[i] = torch.tensor(vocab.str_to_seq(mod_str), dtype=torch.long)
+
+    img_out = image_creation.make_image(background, shape, fill_color, (image_resolution, image_resolution), super_sampling=2)
+    img_out = torch.tensor(img_out, dtype=torch.float32)
+    image_out[i] = img_out
+
+    label_out.append(get_dummy_class(shape, fill_color))
+
+  # Pad to equal length.
+  sequences_in = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_in, batch_first=True)
+  sequences_out = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_out, batch_first=True)
+  sequences_mod = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_mod, batch_first=True)
+
+  device = next(text_encoder.parameters()).device
+  in_embeddings_tensor = text_encoder(sequences_in.to(device)).detach().cpu()
+  out_embeddings_tensor = text_encoder(sequences_out.to(device)).detach().cpu()
+  return torch.utils.data.TensorDataset(in_embeddings_tensor, image_in, label_in, sequences_mod, out_embeddings_tensor, image_out, label_out)
