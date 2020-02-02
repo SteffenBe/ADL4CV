@@ -89,8 +89,8 @@ class SolverCGAN(object):
         iter_per_epoch = len(dataloader)
         print('START TRAIN FOR %d ITERATIONS.' % (iter_per_epoch * num_epochs))
         
+        last_start_time = timer()
         for epoch in range(num_epochs):
-            last_start_time = timer()
             # TRAINING
             generator.train()
             discriminator.train()
