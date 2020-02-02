@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import itertools
 from torch.utils.data import TensorDataset
+from typing import List, Tuple
 
 # Optional module for showing progress bars.
 try: from tqdm import tqdm
@@ -15,6 +16,17 @@ all_shapes = ["square", "triangle"]
 all_fill_colors = ["blue", "red", "green", "yellow", "purple", "cyan"]
 
 all_dummy_classes = list(itertools.product(all_shapes, all_fill_colors))
+
+
+def choose_attrs(blacklist: List[Tuple[str, str]]) -> Tuple[str, str]:
+  """Picks a non-blacklisted shape/color combination."""
+
+  shape = np.random.choice(all_shapes)
+  fill_color = np.random.choice(all_fill_colors)
+  while (shape, fill_color) in blacklist:
+    shape = np.random.choice(all_shapes)
+    fill_color = np.random.choice(all_fill_colors)
+  return shape, fill_color
 
 
 def generate_samples(n_samples, image_resolution=64, blacklist=[]):
@@ -31,13 +43,7 @@ def generate_samples(n_samples, image_resolution=64, blacklist=[]):
 
   background = image_creation.make_default_image('white')
   for i in range(n_samples):
-    # Pick a non-blacklisted shape/color combination.
-    shape = np.random.choice(all_shapes)
-    fill_color = np.random.choice(all_fill_colors)
-    while (shape, fill_color) in blacklist:
-      shape = np.random.choice(all_shapes)
-      fill_color = np.random.choice(all_fill_colors)
-    
+    shape, fill_color = choose_attrs(blacklist)
     label = all_dummy_classes.index((shape, fill_color))
     desc = text_creation.generate_single_description(shape, fill_color)
     img = image_creation.make_image(background, shape, fill_color, (image_resolution, image_resolution), super_sampling=2)
@@ -164,3 +170,45 @@ class TripletDataset(TensorDataset):
 
   def __len__(self):
     return self.tensors[0].size(0)
+
+
+
+def make_modifier_dataset(n_samples, vocab, text_encoder, random_seed=None, blacklist=[]):
+  if random_seed is not None:
+    np.random.seed(random_seed)
+  unpadded_sequences_in = [None] * n_samples
+  unpadded_sequences_mod = [None] * n_samples
+  unpadded_sequences_out = [None] * n_samples
+  
+  for i in tqdm(range(n_samples)):
+    shape, fill_color = choose_attrs(blacklist)
+    desc_tpl = text_creation.choose_baked_description_template()
+    # Generate sample for in_embedding.
+    desc_in = text_creation.generate_single_description(shape, fill_color, desc_tpl)
+    unpadded_sequences_in[i] = torch.tensor(vocab.str_to_seq(desc_in), dtype=torch.long)
+
+    # Pick either a change in shape or color.
+    modifications = {}
+    if np.random.randint(2) == 0:
+      shape = np.random.choice(list(set(all_shapes) - set([shape])))
+      modifications['new_shape'] = shape
+    else:
+      fill_color = np.random.choice(list(set(all_fill_colors) - set([fill_color])))
+      modifications['new_color'] = fill_color
+
+    # Generate sample for out_embedding.
+    desc_out = text_creation.generate_single_description(shape, fill_color, desc_tpl)
+    unpadded_sequences_out[i] = torch.tensor(vocab.str_to_seq(desc_out), dtype=torch.long)
+    
+    # Generate modification text sample.
+    mod_str = text_creation.generate_single_modification(**modifications)
+    unpadded_sequences_mod[i] = torch.tensor(vocab.str_to_seq(mod_str), dtype=torch.long)
+
+  # Pad to equal length.
+  sequences_in = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_in, batch_first=True)
+  sequences_out = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_out, batch_first=True)
+  sequences_mod = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_mod, batch_first=True)
+
+  in_embeddings_tensor = text_encoder(sequences_in.to(device)).detach().cpu()
+  out_embeddings_tensor = text_encoder(sequences_out.to(device)).detach().cpu()
+  return torch.utils.data.TensorDataset(in_embeddings_tensor, sequences_mod, out_embeddings_tensor)
