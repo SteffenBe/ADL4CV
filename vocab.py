@@ -28,7 +28,7 @@ class Vocabulary:
         return self.indices_by_word[w]
       elif w.endswith('s') and w[:-1] in self.indices_by_word:
         return self.indices_by_word[w[:-1]]
-      else
+      else:
         return self.OOV_index
 
     input = re.sub(r"[^a-zA-Z\s]+", "", input.lower())

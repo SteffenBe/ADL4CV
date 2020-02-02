@@ -56,7 +56,6 @@ modifications_shape = [
     "i would prefer a {shape}",
     "a {shape} is better",
     "a {shape} would be better",
-    "{shape} are better",  # plural is lemmatized
 ]
 
 modifications_color = [
