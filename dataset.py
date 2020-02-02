@@ -245,7 +245,7 @@ def make_test_dataset(n_samples, vocab, text_encoder, random_seed=None, blacklis
     unpadded_sequences_in[i] = torch.tensor(vocab.str_to_seq(desc_in), dtype=torch.long)
 
     img_in = image_creation.make_image(background, shape, fill_color, (image_resolution, image_resolution), super_sampling=2)
-    img_in = torch.tensor(img_in, dtype=torch.float32)
+    img_in = torch.tensor(np.array(img_in), dtype=torch.float32)
     image_in[i] = img_in
 
     label_in.append(get_dummy_class(shape, fill_color))
@@ -268,7 +268,7 @@ def make_test_dataset(n_samples, vocab, text_encoder, random_seed=None, blacklis
     unpadded_sequences_mod[i] = torch.tensor(vocab.str_to_seq(mod_str), dtype=torch.long)
 
     img_out = image_creation.make_image(background, shape, fill_color, (image_resolution, image_resolution), super_sampling=2)
-    img_out = torch.tensor(img_out, dtype=torch.float32)
+    img_out = torch.tensor(np.array(img_out), dtype=torch.float32)
     image_out[i] = img_out
 
     label_out.append(get_dummy_class(shape, fill_color))
