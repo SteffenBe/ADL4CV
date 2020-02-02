@@ -1,6 +1,6 @@
 from datetime import datetime
 import numpy as np
-import pickle
+import os
 
 import torch
 from torchvision.utils import save_image
@@ -42,6 +42,29 @@ class SolverCGAN(object):
     def _reset_histories(self):
         self.generator_loss_history = []
         self.discriminator_loss_history = []
+    
+    def _find_mismatching_indices_in_batch(self, batch_labels, verbose=False):
+        """For each label in a batch, searches for an entry with a different label and returns its index.
+        Since labels can have different numbers of occurences, the returned indices are likely to contain duplicates.
+
+        This is pretty slow, but for our purposes still sufficient (measured around 2.2 ms for a batch size of 100).
+        
+        Input:  tensor of shape (N, 1) containing class labels
+        Output: tensor of shape (N, 1) containing indices of mismatching class labels
+        """
+
+        labels = batch_labels.detach().cpu().numpy()  # don't read it from GPU in the loop
+        batch_size = labels.shape[0]
+        indices = torch.randint(batch_size, size=(batch_size,))
+        n_repicks = 0
+        for i in range(batch_size):
+            # Pick a new index until we found a different class
+            while labels[indices[i]] == labels[i]:
+                indices[i] = torch.randint(batch_size, size=(1,))
+                n_repicks += 1
+        
+        if verbose: print("n_repicks:", n_repicks)
+        return indices
 
     def train(self, generator, discriminator, dataloader, num_epochs=10, log_nth=0, save_nth_batch=0):
         """
@@ -72,7 +95,7 @@ class SolverCGAN(object):
             generator.train()
             discriminator.train()
             
-            # Keep generated images around for the multiple steps of training of the discriminator.
+            # Keep last generated images around in case there are multiple steps of training of the discriminator.
             fake_imgs = None
 
             for i, batch in enumerate(dataloader):
@@ -80,7 +103,7 @@ class SolverCGAN(object):
                 batch = tuple(tensor.to(device) for tensor in batch)
                 batch_size = batch[0].size(0)
                 
-                condition_inputs, real_imgs, _ = batch
+                condition_inputs, real_imgs, labels = batch
 
                 if type(self.condition_input_for_save) == type(None):
                     self.condition_input_for_save = condition_inputs[:5]
@@ -98,13 +121,14 @@ class SolverCGAN(object):
                 z = torch.randn(batch_size, self.latent_dim).to(device)
                 gen_input = torch.cat([z, condition_inputs], 1)
                 gen_imgs = generator(gen_input)
+                fake_imgs = gen_imgs.detach()
+
                 # Loss measures generator's ability to fool the discriminator
                 g_loss = self.loss_func(discriminator(gen_imgs, condition_inputs), valid)
 
                 g_loss.backward()
                 optimizer_G.step()
                 self.generator_loss_history.append(g_loss.item())
-                fake_imgs = gen_imgs.detach()
 
                 # ---------------------
                 #  Train Discriminator
@@ -112,12 +136,19 @@ class SolverCGAN(object):
 
                 optimizer_D.zero_grad()
 
+                # For each sample in this batch, find ones that do not match.
+                wrong_condition_inputs = condition_inputs[self._find_mismatching_indices_in_batch(labels)]
+
                 # Measure discriminator's ability to classify real from generated samples
-                dout_real = discriminator(real_imgs, condition_inputs)
-                dout_fake = discriminator(fake_imgs, condition_inputs)
-                real_loss = self.loss_func(dout_real, valid)
-                fake_loss = self.loss_func(dout_fake, fake)
-                d_loss = (real_loss + fake_loss) / 2
+                d_out_real = discriminator(real_imgs, condition_inputs)
+                d_out_fake = discriminator(fake_imgs, condition_inputs)
+                # Measure discriminator's ability to detect wrongly assigned conditioning information.
+                d_out_wrong = discriminator(real_imgs, wrong_condition_inputs)
+
+                real_loss = self.loss_func(d_out_real, valid)
+                fake_loss = self.loss_func(d_out_fake, fake)
+                wrong_loss = self.loss_func(d_out_wrong, fake)
+                d_loss = real_loss + (fake_loss + wrong_loss) / 2
 
                 d_loss.backward()
                 optimizer_D.step()
@@ -160,5 +191,6 @@ class SolverCGAN(object):
         gen_imgs = generator(gen_input.to(device)).detach().cpu()
         generator.train()
 
+        os.makedirs("images", exist_ok=True)
         fname = "images/%s--%05d.png" % (self.instance_id, n_iterations)
         save_image(gen_imgs.permute(0, 3, 1, 2), fname, nrow=num_conditions, normalize=True)
