@@ -71,10 +71,11 @@ class SolverCGAN(object):
         Train a given model with the provided data.
 
         Inputs:
-        - generator: model to train,
-        - discriminator: model to train,
+        - generator: model to train
+        - discriminator: model to train
         - dataloader: train data in torch.utils.data.DataLoader
         - num_epochs: total number of training epochs
+        - log_nth: output losses and stats every n trained batches
         - save_nth_batch: save sample images every n trained batches
         """
         
@@ -158,7 +159,7 @@ class SolverCGAN(object):
                     print("(Saving samples after %d total iterations.)" % batch_index)
                     self._save_samples(generator, batch_index, device)
 
-                if log_nth and batch_index % log_nth == 0:
+                if log_nth and batch_index % log_nth == 0 and batch_index > 0:
                     now = timer()
                     time_elapsed = now - last_start_time
                     iter_per_second = log_nth / time_elapsed
