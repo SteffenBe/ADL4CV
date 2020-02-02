@@ -209,7 +209,7 @@ def make_modifier_dataset(n_samples, vocab, text_encoder, random_seed=None, blac
   sequences_out = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_out, batch_first=True)
   sequences_mod = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_mod, batch_first=True)
 
-  device = next(joint_model.parameters()).device
+  device = next(text_encoder.parameters()).device
   in_embeddings_tensor = text_encoder(sequences_in.to(device)).detach().cpu()
   out_embeddings_tensor = text_encoder(sequences_out.to(device)).detach().cpu()
   return torch.utils.data.TensorDataset(in_embeddings_tensor, sequences_mod, out_embeddings_tensor)
