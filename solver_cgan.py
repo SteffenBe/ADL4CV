@@ -79,8 +79,9 @@ class SolverCGAN(object):
                 if type(self.condition_for_save) == type(None):
                     self.condition_for_save = condition_inputs[:25]
 
-                # Adversarial ground truths
-                valid = torch.Tensor(batch_size, 1).fill_(1.0).to(device)
+                # Adversarial ground truths. Set target for real images to 0.9 instead of 1
+                # to apply "label smoothing" (prevent overconfidence of discriminator).
+                valid = torch.Tensor(batch_size, 1).fill_(0.9).to(device)
                 fake = torch.Tensor(batch_size, 1).fill_(0.0).to(device)
                 
                 # -----------------
