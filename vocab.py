@@ -23,10 +23,18 @@ class Vocabulary:
     with the special marker END_index.
     """
 
+    def map_word(w):
+      if w in self.indices_by_word:
+        return self.indices_by_word[w]
+      elif w.endswith('s') and w[:-1] in self.indices_by_word:
+        return self.indices_by_word[w[:-1]]
+      else
+        return self.OOV_index
+
     input = re.sub(r"[^a-zA-Z\s]+", "", input.lower())
     input = re.sub(r"\s+", " ", input)
     input_words = input.split(" ")
-    return [self.indices_by_word.get(w, self.OOV_index) for w in input_words] \
+    return [map_word(w) for w in input_words] \
            + [self.END_index]
 
 

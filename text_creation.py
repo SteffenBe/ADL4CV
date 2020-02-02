@@ -52,15 +52,22 @@ instructions = [
 modifications_shape = [
     "make it a {shape}",
     "change it to a {shape}",
+    "i prefer a {shape}",
     "i would prefer a {shape}",
+    "a {shape} is better",
+    "a {shape} would be better",
+    "{shape} are better",  # plural is lemmatized
 ]
 
 modifications_color = [
     "make it {col}",
+    "please in {col}",
     "change the color to {col}",
+    "i prefer {col}",
     "i would prefer {col}",
-    "{col} would be better",
     "try it in {col}",
+    "{col} would be better",
+    "{col} please",
 ]
 
 
