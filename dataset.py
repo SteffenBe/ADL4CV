@@ -220,7 +220,7 @@ def get_dummy_class(shape, color):
     return all_dummy_classes.index((shape, color))
 
 
-def make_test_dataset(n_samples, vocab, text_encoder, random_seed=None, blacklist=[]):
+def make_test_data(n_samples, vocab, text_encoder, random_seed=None, blacklist=[]):
   if random_seed is not None:
     np.random.seed(random_seed)
   unpadded_sequences_in = [None] * n_samples
@@ -278,7 +278,11 @@ def make_test_dataset(n_samples, vocab, text_encoder, random_seed=None, blacklis
   sequences_out = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_out, batch_first=True)
   sequences_mod = torch.nn.utils.rnn.pad_sequence(unpadded_sequences_mod, batch_first=True)
 
+  label_in = torch.tensor(label_in, dtype=torch.float32)
+  label_out = torch.tensor(label_in, dtype=torch.float32)
+
+
   device = next(text_encoder.parameters()).device
   in_embeddings_tensor = text_encoder(sequences_in.to(device)).detach().cpu()
   out_embeddings_tensor = text_encoder(sequences_out.to(device)).detach().cpu()
-  return torch.utils.data.TensorDataset(in_embeddings_tensor, image_in, label_in, sequences_mod, out_embeddings_tensor, image_out, label_out)
+  return in_embeddings_tensor, image_in, label_in, sequences_mod, out_embeddings_tensor, image_out, label_out
